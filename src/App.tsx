@@ -14,6 +14,7 @@ import Invoice from "./pages/Invoice";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Payment from "./pages/Payment";
+// import PaymentConfirmation from "./pages/PaymentConfirmation";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
 import ProductDetail from "./pages/ProductDetail";
 import ProductList from "./pages/ProductList";
@@ -35,12 +36,16 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/about" element={<About />} />
+
             <Route path="/products" element={<ProductList />} />
-            <Route path="/products/:id" element={<ProductDetail />} />
+            {/* pakai slug agar match backend /api/products/{slug} */}
+            <Route path="/products/:slug" element={<ProductDetail />} />
+
             <Route path="/cart" element={<Cart />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
-            <Route path="/payment/confirmation/:transactionId" element={<ProtectedRoute><PaymentConfirmation /></ProtectedRoute>} />
+            <Route path="/payment/confirmation/:orderNumber" element={<PaymentConfirmation />} />
+            {/* <Route path="/payment/confirmation/:transactionId" element={<ProtectedRoute><PaymentConfirmation /></ProtectedRoute>} /> */}
             <Route path="/transaction/result" element={<ProtectedRoute><TransactionResult /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

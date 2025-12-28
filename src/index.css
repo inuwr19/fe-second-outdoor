@@ -45,8 +45,8 @@
     --warning: 35 90% 50%;
     --warning-foreground: 215 35% 16%;
 
-    --font-display: 'Playfair Display', serif;
-    --font-body: 'DM Sans', sans-serif;
+    --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 
     --sidebar-background: 205 100% 96%;
     --sidebar-foreground: 215 35% 16%;
@@ -113,6 +113,10 @@
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-display;
+  }
+
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
   }
 }
 

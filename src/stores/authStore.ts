@@ -1,3 +1,4 @@
+import { useCartStore } from '@/stores/cartStore';
 import { User } from '@/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -94,8 +95,11 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         const { token } = get();
+
         if (token) {
             try {
+              set({ user: null, token: null, error: null });
+              useCartStore.getState().clearCart();
                 await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {
                     method: 'POST',
                     headers: {

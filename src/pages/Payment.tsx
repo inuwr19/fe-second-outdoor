@@ -1,185 +1,176 @@
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
+import { apiPost } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
-import { useProductStore } from '@/stores/productStore';
-import { useTransactionStore } from '@/stores/transactionStore';
-import { PaymentMethod } from '@/types';
-import { ArrowLeft, Building, CreditCard, Loader2, Wallet } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
+type CheckoutResponse = {
+  order_number: string;
+  snap_token?: string;
+  order?: any;
+};
 
 const Payment = () => {
   const navigate = useNavigate();
   const { items, getTotal, clearCart } = useCartStore();
-  const { user } = useAuthStore();
-  const { createTransaction } = useTransactionStore();
-  const { markMultipleAsSold } = useProductStore();
+  const { user, updateUser } = useAuthStore();
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  if (!user) {
-    navigate('/login');
-    return null;
-  }
+  const [phone, setPhone] = useState((user?.phone ?? '').toString());
+  const [address, setAddress] = useState((user?.address ?? '').toString());
+  const [notes, setNotes] = useState('');
 
-  if (items.length === 0) {
-    navigate('/cart');
-    return null;
-  }
+  // Redirect side-effects sebaiknya via useEffect, bukan di render
+  useEffect(() => {
+    if (!user) navigate('/login', { replace: true });
+  }, [user, navigate]);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
+  useEffect(() => {
+    // Jika cart kosong "normal" → balik ke cart
+    // Tapi kalau sedang submit / sedang redirect → jangan (biar tidak mental balik)
+    if (user && items.length === 0 && !isSubmitting && !isRedirecting) {
+      navigate('/cart', { replace: true });
+    }
+  }, [user, items.length, isSubmitting, isRedirecting, navigate]);
+
+  if (!user) return null;
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
     }).format(price);
-  };
 
   const subtotal = getTotal();
+  const shippingFee = 10_000;
   const tax = Math.round(subtotal * 0.11);
-  const total = subtotal + tax;
+  const total = subtotal + shippingFee + tax;
 
-  const paymentMethods = [
-    {
-      id: 'bank_transfer' as PaymentMethod,
-      name: 'Transfer Bank',
-      description: 'BCA, Mandiri, BNI, BRI',
-      icon: Building,
-    },
-    {
-      id: 'e_wallet' as PaymentMethod,
-      name: 'E-Wallet',
-      description: 'GoPay, OVO, DANA, ShopeePay',
-      icon: Wallet,
-    },
-    {
-      id: 'cod' as PaymentMethod,
-      name: 'COD',
-      description: 'Bayar di tempat',
-      icon: CreditCard,
-    },
-  ];
+  const canSubmit = useMemo(() => phone.trim().length > 0 && address.trim().length > 0, [phone, address]);
 
-  const handlePay = async () => {
-    setIsProcessing(true);
+  const handleContinue = async () => {
+    if (!canSubmit) {
+      toast.error('Nomor HP dan Alamat wajib diisi.');
+      return;
+    }
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        phone: phone.trim(),
+        address: address.trim(),
+        notes: notes.trim() ? notes.trim() : null,
+      };
 
-    // Create transaction
-    const transaction = createTransaction(items, paymentMethod, user.id);
+      const data = await apiPost<CheckoutResponse>('/checkout', payload);
 
-    // Navigate to confirmation
-    navigate(`/payment/confirmation/${transaction.id}`);
+      const orderNumber = data?.order_number;
+      if (!orderNumber) {
+        toast.error('Checkout berhasil tetapi order_number tidak ditemukan pada response.');
+        return;
+      }
 
-    setIsProcessing(false);
+      // update store user agar confirmation konsisten
+      updateUser({ phone: payload.phone, address: payload.address });
+
+      // penting: set redirect flag dulu, lalu navigate dulu
+      setIsRedirecting(true);
+      navigate(`/payment/confirmation/${orderNumber}`, { replace: true });
+
+      // clear cart SETELAH navigate agar tidak memicu guard /cart
+      setTimeout(() => {
+        clearCart();
+      }, 0);
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Gagal melanjutkan checkout.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <>
       <Helmet>
-        <title>Pembayaran - Second Outdoor</title>
-        <meta name="description" content="Selesaikan pembayaran untuk pesanan Anda." />
+        <title>Data Pengiriman - Second Outdoor</title>
+        <meta name="description" content="Lengkapi data pengiriman untuk pesanan Anda." />
       </Helmet>
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="container mx-auto px-4 py-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/cart')}
-            className="mb-6"
-          >
+          <Button variant="ghost" onClick={() => navigate('/cart')} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Kembali ke Keranjang
           </Button>
 
-          <h1 className="font-display text-3xl font-bold text-foreground mb-8 animate-fade-in">
-            Pembayaran
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-8">Data Pengiriman</h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Payment Methods */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Shipping Address */}
-              <div className="glass-card rounded-xl p-6 animate-fade-in">
-                <h2 className="font-display text-lg font-semibold mb-4">Alamat Pengiriman</h2>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="font-medium">{user.name}</p>
-                  <p className="text-muted-foreground text-sm mt-1">{user.phone}</p>
-                  <p className="text-muted-foreground text-sm">{user.address}</p>
+              <div className="glass-card rounded-xl p-6">
+                <h2 className="text-lg font-semibold mb-4">Data Penerima</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Nama</Label>
+                    <Input value={user.name} disabled className="h-11" />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input value={user.email} disabled className="h-11" />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Label>No. HP</Label>
+                    <Input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Contoh: 081234567890"
+                      className="h-11"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Label>Alamat</Label>
+                    <textarea
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Masukkan alamat lengkap (jalan, kecamatan, kota, kode pos)"
+                      className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Label>Catatan (opsional)</Label>
+                    <Input
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Contoh: titip ke satpam / jam pengantaran"
+                      className="h-11"
+                      disabled={isSubmitting}
+                    />
+                  </div>
                 </div>
-              </div>
-
-              {/* Order Items */}
-              <div className="glass-card rounded-xl p-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                <h2 className="font-display text-lg font-semibold mb-4">Item Pesanan</h2>
-                <div className="space-y-4">
-                  {items.map((item) => (
-                    <div key={item.product.id} className="flex gap-4">
-                      <div className="w-16 h-20 rounded-lg overflow-hidden bg-muted shrink-0">
-                        <img
-                          src={item.product.image}
-                          alt={item.product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{item.product.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Size {item.product.size} • Qty: {item.quantity}
-                        </p>
-                      </div>
-                      <p className="font-semibold">{formatPrice(item.product.price)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Payment Method */}
-              <div className="glass-card rounded-xl p-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                <h2 className="font-display text-lg font-semibold mb-4">Metode Pembayaran</h2>
-
-                <RadioGroup
-                  value={paymentMethod}
-                  onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
-                  className="space-y-3"
-                >
-                  {paymentMethods.map((method) => (
-                    <Label
-                      key={method.id}
-                      htmlFor={method.id}
-                      className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        paymentMethod === method.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <RadioGroupItem value={method.id} id={method.id} />
-                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                        <method.icon className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{method.name}</p>
-                        <p className="text-sm text-muted-foreground">{method.description}</p>
-                      </div>
-                    </Label>
-                  ))}
-                </RadioGroup>
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="glass-card rounded-xl p-6 sticky top-24 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-                <h2 className="font-display text-xl font-semibold mb-6">Ringkasan Pembayaran</h2>
+              <div className="glass-card rounded-xl p-6 sticky top-24">
+                <h2 className="text-xl font-semibold mb-6">Ringkasan Pembayaran</h2>
 
                 <div className="space-y-4">
                   <div className="flex justify-between">
@@ -188,7 +179,7 @@ const Payment = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Ongkos Kirim</span>
-                    <span className="font-medium text-success">Gratis</span>
+                    <span className="font-medium">{formatPrice(shippingFee)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">PPN (11%)</span>
@@ -199,24 +190,22 @@ const Payment = () => {
 
                   <div className="flex justify-between">
                     <span className="font-semibold">Total</span>
-                    <span className="font-display text-xl font-bold text-primary">
-                      {formatPrice(total)}
-                    </span>
+                    <span className="text-xl font-bold text-primary">{formatPrice(total)}</span>
                   </div>
                 </div>
 
                 <Button
-                  onClick={handlePay}
-                  disabled={isProcessing}
+                  onClick={handleContinue}
+                  disabled={isSubmitting || !canSubmit}
                   className="w-full h-12 mt-6 text-base"
                 >
-                  {isProcessing ? (
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Memproses...
                     </>
                   ) : (
-                    `Bayar ${formatPrice(total)}`
+                    'Lanjut ke Konfirmasi'
                   )}
                 </Button>
               </div>

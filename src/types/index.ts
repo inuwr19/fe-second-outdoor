@@ -1,15 +1,22 @@
 export interface Product {
   id: string;
+  slug: string;
+
   name: string;
   price: number;
   description: string;
-  condition: 'Like New' | 'Excellent' | 'Good' | 'Fair';
+
   category: string;
-  image: string;
+  condition: 'new' | 'like_new' | 'good' | 'fair';
+  conditionLabel: 'New' | 'Like New' | 'Good' | 'Fair';
+
   size: string;
-  stock: number; // Always 1 for thrift items, 0 when sold
-  createdAt: Date;
+  stock: number;
+
+  image: string;     // URL gambar utama
+  createdAt: string; // ISO
 }
+
 
 export interface User {
   id: string;
@@ -21,8 +28,10 @@ export interface User {
 }
 
 export interface CartItem {
+  id?: string;        // id CartItem dari backend (optional untuk guest/local)
   product: Product;
-  quantity: number; // Always 1 for thrift items
+  quantity: number;
+  price_snapshot?: number; // optional jika Anda ingin total pakai snapshot
 }
 
 export type PaymentMethod = 'bank_transfer' | 'e_wallet' | 'cod';

@@ -5,19 +5,37 @@ import { Separator } from '@/components/ui/separator';
 import { useCartStore } from '@/stores/cartStore';
 import { useProductStore } from '@/stores/productStore';
 import { ArrowLeft, Check, Heart, Share2, ShoppingBag } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const ProductDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { getProduct } = useProductStore();
+
+  const { fetchProductBySlug, getProductBySlug, loading, error } = useProductStore();
   const { addToCart, isInCart } = useCartStore();
 
-  const product = getProduct(id!);
+  useEffect(() => {
+    if (slug) fetchProductBySlug(slug);
+  }, [slug, fetchProductBySlug]);
+
+  const product = useMemo(() => (slug ? getProductBySlug(slug) : undefined), [slug, getProductBySlug]);
+
   const inCart = product ? isInCart(product.id) : false;
   const isSoldOut = product ? product.stock < 1 : false;
+
+  if (loading && !product) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">
+          Memuat detail produk...
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -25,6 +43,7 @@ const ProductDetail = () => {
         <Navbar />
         <div className="container mx-auto px-4 py-20 text-center">
           <h1 className="font-display text-2xl font-bold mb-4">Produk tidak ditemukan</h1>
+          {error && <p className="text-sm text-destructive mb-4">{error}</p>}
           <Button onClick={() => navigate('/products')}>Kembali ke Koleksi</Button>
         </div>
       </div>
@@ -43,31 +62,31 @@ const ProductDetail = () => {
     }
 
     const success = addToCart(product);
-    if (success) {
-      toast.success('Berhasil ditambahkan ke keranjang!');
-    }
+    if (success) toast.success('Berhasil ditambahkan ke keranjang!');
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
     }).format(price);
-  };
 
-  const conditionColor = {
+  // gunakan label condition yang konsisten
+  const conditionLabel = (product as any).conditionLabel ?? product.condition;
+
+  const conditionColor: Record<string, string> = {
+    New: 'bg-secondary text-secondary-foreground',
     'Like New': 'bg-success text-success-foreground',
-    'Excellent': 'bg-secondary text-secondary-foreground',
-    'Good': 'bg-accent text-accent-foreground',
-    'Fair': 'bg-muted text-muted-foreground',
+    Good: 'bg-accent text-accent-foreground',
+    Fair: 'bg-muted text-muted-foreground',
   };
 
-  const conditionDesc = {
+  const conditionDesc: Record<string, string> = {
+    New: 'Kondisi baru, minim/nihil tanda pemakaian',
     'Like New': 'Kondisi seperti baru, hampir tidak ada tanda pemakaian',
-    'Excellent': 'Kondisi sangat baik dengan sedikit tanda pemakaian',
-    'Good': 'Kondisi baik dengan tanda pemakaian wajar',
-    'Fair': 'Kondisi cukup dengan beberapa tanda pemakaian terlihat',
+    Good: 'Kondisi baik dengan tanda pemakaian wajar',
+    Fair: 'Kondisi cukup dengan beberapa tanda pemakaian terlihat',
   };
 
   return (
@@ -81,7 +100,6 @@ const ProductDetail = () => {
         <Navbar />
 
         <main className="container mx-auto px-4 py-8">
-          {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 animate-fade-in">
             <Link to="/products" className="hover:text-primary transition-colors flex items-center gap-1">
               <ArrowLeft className="w-4 h-4" />
@@ -94,14 +112,9 @@ const ProductDetail = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Image */}
             <div className="animate-fade-in">
               <div className={`relative aspect-[3/4] rounded-2xl overflow-hidden glass-card ${isSoldOut ? 'opacity-75' : ''}`}>
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
+                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
 
                 {isSoldOut && (
                   <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
@@ -111,13 +124,12 @@ const ProductDetail = () => {
                   </div>
                 )}
 
-                <Badge className={`absolute top-4 left-4 ${conditionColor[product.condition]}`}>
-                  {product.condition}
+                <Badge className={`absolute top-4 left-4 ${conditionColor[conditionLabel] ?? 'bg-muted text-muted-foreground'}`}>
+                  {conditionLabel}
                 </Badge>
               </div>
             </div>
 
-            {/* Details */}
             <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <div className="sticky top-24">
                 <Badge variant="outline" className="mb-4">
@@ -138,7 +150,6 @@ const ProductDetail = () => {
 
                 <Separator className="my-6" />
 
-                {/* Specs */}
                 <div className="grid grid-cols-2 gap-4 mb-8">
                   <div className="glass-card rounded-lg p-4">
                     <p className="text-sm text-muted-foreground mb-1">Size</p>
@@ -146,35 +157,30 @@ const ProductDetail = () => {
                   </div>
                   <div className="glass-card rounded-lg p-4">
                     <p className="text-sm text-muted-foreground mb-1">Kondisi</p>
-                    <p className="font-semibold">{product.condition}</p>
+                    <p className="font-semibold">{conditionLabel}</p>
                   </div>
                 </div>
 
-                {/* Condition Info */}
                 <div className="glass-card rounded-lg p-4 mb-8">
                   <p className="text-sm font-medium mb-1">Tentang Kondisi</p>
                   <p className="text-sm text-muted-foreground">
-                    {conditionDesc[product.condition]}
+                    {conditionDesc[conditionLabel] ?? 'Kondisi produk thrift.'}
                   </p>
                 </div>
 
-                {/* Stock Info */}
                 <div className="flex items-center gap-2 mb-8">
                   <div className={`w-2 h-2 rounded-full ${isSoldOut ? 'bg-destructive' : 'bg-success'}`} />
                   <span className="text-sm">
-                    {isSoldOut ? 'Stok habis' : 'Stok tersedia (1 pcs)'}
+                    {isSoldOut ? 'Stok habis' : 'Stok tersedia'}
                   </span>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex gap-4">
                   <Button
                     onClick={handleAddToCart}
                     disabled={isSoldOut}
                     size="lg"
-                    className={`flex-1 h-14 text-base ${
-                      inCart ? 'bg-success hover:bg-success' : ''
-                    }`}
+                    className={`flex-1 h-14 text-base ${inCart ? 'bg-success hover:bg-success' : ''}`}
                   >
                     {isSoldOut ? (
                       'Sold Out'
@@ -199,17 +205,6 @@ const ProductDetail = () => {
                     <Share2 className="w-5 h-5" />
                   </Button>
                 </div>
-
-                {/* Thrift Notice */}
-                {/* <div className="mt-8 p-4 rounded-lg bg-secondary/10 border border-secondary/20">
-                  <p className="text-sm text-secondary font-medium mb-1">
-                    🌿 Sustainable Fashion
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Item thrift adalah barang unik dengan stok terbatas (1 pcs).
-                    Segera checkout sebelum kehabisan!
-                  </p>
-                </div> */}
               </div>
             </div>
           </div>

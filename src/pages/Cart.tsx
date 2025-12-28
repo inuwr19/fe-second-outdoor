@@ -4,18 +4,28 @@ import { Separator } from '@/components/ui/separator';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import { ArrowRight, ShoppingBag, Trash2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+
 const Cart = () => {
   const navigate = useNavigate();
-  const { items, removeFromCart, getTotal } = useCartStore();
+  const { items, removeFromCart, getTotal, fetchCart } = useCartStore();
   const { user } = useAuthStore();
 
-  const handleRemove = (productId: string, productName: string) => {
-    removeFromCart(productId);
-    toast.success(`${productName} dihapus dari keranjang`);
+  useEffect(() => {
+    if (user) fetchCart();
+  }, [user, fetchCart]);
+
+  const handleRemove = async (productId: string, productName: string) => {
+    try {
+      await removeFromCart(productId);
+      toast.success(`${productName} dihapus dari keranjang`);
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Gagal menghapus item');
+    }
   };
 
   const handleCheckout = () => {
@@ -150,12 +160,6 @@ const Cart = () => {
                     Lanjut ke Pembayaran
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
-
-                  <div className="mt-4 p-3 rounded-lg bg-secondary/10 border border-secondary/20">
-                    <p className="text-xs text-muted-foreground text-center">
-                      🌿 Terima kasih telah mendukung sustainable fashion!
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>

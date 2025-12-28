@@ -4,177 +4,212 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Slider } from '@/components/ui/slider';
-import { categories, conditions } from '@/data/mockData';
 import { useProductStore } from '@/stores/productStore';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 
-const ITEMS_PER_PAGE = 8;
+const CATEGORY_OPTIONS = [
+  { value: 'All', label: 'Semua' },
+  { value: 'outer', label: 'Outer/Jaket' },
+  { value: 'polo', label: 'Polo' },
+  { value: 'shirt', label: 'Kemeja' },
+  { value: 'tshirt', label: 'T-Shirt' },
+  { value: 'longsleeve', label: 'Longsleeve' },
+  { value: 'pants', label: 'Celana Panjang' },
+  { value: 'shorts', label: 'Celana Pendek' },
+  { value: 'other', label: 'Lainnya' },
+];
+
+const CONDITION_OPTIONS = [
+  { value: 'All', label: 'Semua' },
+  { value: 'new', label: 'New' },
+  { value: 'like_new', label: 'Like New' },
+  { value: 'good', label: 'Good' },
+  { value: 'fair', label: 'Fair' },
+];
 
 const ProductList = () => {
-  const { products } = useProductStore();
+  const { products, fetchProducts, loading, error, currentPage, lastPage, total } = useProductStore();
 
-  // Filters
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
-  const [condition, setCondition] = useState('All');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
-  const [sortBy, setSortBy] = useState('newest');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [condition, setCondition] = useState('All'); // NOTE: backend Anda belum filter condition
+  // const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'price-low' | 'price-high'>('newest');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const PRICE_MIN = 0;
+  const PRICE_MAX = 1000000;
 
-  const maxPrice = Math.max(...products.map((p) => p.price));
+    const formatThousands = (n: number) => new Intl.NumberFormat('id-ID').format(n);
 
-  // Filtered & Sorted Products
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
+  const onlyDigits = (v: string) => v.replace(/\D/g, ''); // buang titik, spasi, dll
 
-    // Search
-    if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchLower) ||
-          p.description.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Category
-    if (category !== 'All') {
-      result = result.filter((p) => p.category === category);
-    }
-
-    // Condition
-    if (condition !== 'All') {
-      result = result.filter((p) => p.condition === condition);
-    }
-
-    // Price Range
-    result = result.filter(
-      (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
-    );
-
-    // Sort
-    switch (sortBy) {
-      case 'price-low':
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-high':
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case 'newest':
-        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-      case 'oldest':
-        result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        break;
-    }
-
-    return result;
-  }, [products, search, category, condition, priceRange, sortBy]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(price);
+  const formatFromInput = (v: string) => {
+    const digits = onlyDigits(v);
+    if (!digits) return '';
+    return formatThousands(Number(digits));
   };
+
+  const parseFormatted = (v: string) => {
+    const digits = onlyDigits(v);
+    return digits ? Number(digits) : 0;
+  };
+
+  const [priceRange, setPriceRange] = useState<[number, number]>([PRICE_MIN, PRICE_MAX]);
+
+  const [priceInput, setPriceInput] = useState<{ min: string; max: string }>({
+    min: formatThousands(PRICE_MIN),
+    max: formatThousands(PRICE_MAX),
+  });
+
+
+
+  const apiSort = useMemo(() => {
+    if (sortBy === 'price-low') return 'price_asc';
+    if (sortBy === 'price-high') return 'price_desc';
+    if (sortBy === 'oldest') return 'oldest';
+    return undefined; // newest default latest()
+  }, [sortBy]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      fetchProducts({
+        page: 1,
+        search: search || undefined,
+        category: category !== 'All' ? category : undefined,
+        min_price: priceRange[0],
+        max_price: priceRange[1],
+        sort: apiSort as any,
+      });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search, category, priceRange, apiSort, fetchProducts]);
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
 
   const clearFilters = () => {
     setSearch('');
     setCategory('All');
     setCondition('All');
-    setPriceRange([0, maxPrice]);
+    setPriceRange([PRICE_MIN, PRICE_MAX]);
+    setPriceInput({ min: formatThousands(PRICE_MIN), max: formatThousands(PRICE_MAX) });
     setSortBy('newest');
-    setCurrentPage(1);
   };
 
   const hasActiveFilters =
-    search ||
+    !!search ||
     category !== 'All' ||
     condition !== 'All' ||
-    priceRange[0] > 0 ||
-    priceRange[1] < maxPrice;
+    priceRange[0] > PRICE_MIN ||
+    priceRange[1] < PRICE_MAX;
 
-  const FilterContent = () => (
+
+  const renderFilterContent  = () => (
     <div className="space-y-6">
-      {/* Category */}
       <div className="space-y-2">
-        <Label>Kategori</Label>
+        <Label className="text-sm font-semibold">Kategori</Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger>
+          <SelectTrigger className="h-11">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
+            {CATEGORY_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Condition */}
       <div className="space-y-2">
-        <Label>Kondisi</Label>
+        <Label className="text-sm font-semibold">Kondisi</Label>
         <Select value={condition} onValueChange={setCondition}>
-          <SelectTrigger>
+          <SelectTrigger className="h-11">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {conditions.map((cond) => (
-              <SelectItem key={cond} value={cond}>
-                {cond}
+            {CONDITION_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Catatan: backend Anda belum filter kondisi. Jika ingin, saya bisa buatkan query `condition` di controller.
+        </p>
       </div>
 
-      {/* Price Range */}
       <div className="space-y-4">
-        <Label>Rentang Harga</Label>
+        <Label className="text-sm font-semibold">Rentang Harga</Label>
         <Slider
           value={priceRange}
-          onValueChange={(value) => setPriceRange(value as [number, number])}
-          min={0}
-          max={maxPrice}
+          onValueChange={(value) => {
+            const next = value as [number, number];
+            setPriceRange(next);
+            setPriceInput({ min: formatThousands(next[0]), max: formatThousands(next[1]) });
+          }}
+          min={PRICE_MIN}
+          max={PRICE_MAX}
           step={10000}
-          className="mt-2"
         />
+
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>{formatPrice(priceRange[0])}</span>
           <span>{formatPrice(priceRange[1])}</span>
         </div>
+        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">Min</Label>
+          <Input
+            inputMode="numeric"
+            placeholder="0"
+            value={priceInput.min}
+            onChange={(e) => {
+              setPriceInput((p) => ({ ...p, min: formatFromInput(e.target.value) }));
+            }}
+            onBlur={() => {
+              const minVal = Math.max(PRICE_MIN, Math.min(PRICE_MAX, parseFormatted(priceInput.min) || PRICE_MIN));
+              const maxVal = Math.max(minVal, priceRange[1]); // max >= min
+              setPriceRange([minVal, maxVal]);
+              setPriceInput({ min: formatThousands(minVal), max: formatThousands(maxVal) });
+            }}
+            className="h-11"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">Max</Label>
+          <Input
+            inputMode="numeric"
+            placeholder="1.000.000"
+            value={priceInput.max}
+            onChange={(e) => {
+              setPriceInput((p) => ({ ...p, max: formatFromInput(e.target.value) }));
+            }}
+            onBlur={() => {
+              const maxVal = Math.max(PRICE_MIN, Math.min(PRICE_MAX, parseFormatted(priceInput.max) || PRICE_MAX));
+              const minVal = Math.min(maxVal, priceRange[0]); // min <= max
+              setPriceRange([minVal, maxVal]);
+              setPriceInput({ min: formatThousands(minVal), max: formatThousands(maxVal) });
+            }}
+            className="h-11"
+          />
+
+        </div>
+      </div>
+
       </div>
 
       {hasActiveFilters && (
-        <Button variant="outline" onClick={clearFilters} className="w-full">
+        <Button variant="outline" onClick={clearFilters} className="w-full h-11">
           <X className="w-4 h-4 mr-2" />
           Reset Filter
         </Button>
@@ -182,11 +217,22 @@ const ProductList = () => {
     </div>
   );
 
+  const goToPage = (page: number) => {
+    fetchProducts({
+      page,
+      search: search || undefined,
+      category: category !== 'All' ? category : undefined,
+      min_price: priceRange[0],
+      max_price: priceRange[1],
+      sort: apiSort as any,
+    });
+  };
+
   return (
     <>
       <Helmet>
         <title>Koleksi Thrift - Second Outdoor</title>
-        <meta name="description" content="Jelajahi koleksi pakaian thrift berkualitas. Temukan item vintage unik dengan harga terjangkau." />
+        <meta name="description" content="Jelajahi koleksi pakaian thrift berkualitas." />
       </Helmet>
 
       <div className="min-h-screen bg-background">
@@ -194,34 +240,53 @@ const ProductList = () => {
 
         <main className="container mx-auto px-6 md:px-12 py-8">
           {/* Header */}
-          <div className="mb-8 animate-fade-in">
-            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-              Koleksi Thrift
-            </h1>
-            <p className="text-muted-foreground">
-              {filteredProducts.length} produk ditemukan
-            </p>
+          <div className="flex flex-col gap-2 mb-6">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-foreground">
+                  Koleksi Thrift
+                </h1>
+                <p className="text-sm md:text-base text-muted-foreground mt-1">
+                  {loading ? 'Memuat...' : `${total} produk tersedia`}
+                </p>
+                {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+              </div>
+
+              {hasActiveFilters && (
+                <Button variant="ghost" onClick={clearFilters} className="hidden md:inline-flex">
+                  Reset
+                </Button>
+              )}
+            </div>
+
+            {/* Active filters chips (ringkas) */}
+            {hasActiveFilters && (
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {search && <Badge variant="secondary">Cari: {search}</Badge>}
+                {category !== 'All' && <Badge variant="secondary">Kategori: {category}</Badge>}
+                {(priceRange[0] > 0 || priceRange[1] < 500000) && (
+                  <Badge variant="secondary">
+                    Harga: {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Search & Filters Bar */}
-          <div className="flex flex-col md:flex-row gap-4 mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            {/* Search */}
-            <div className="relative flex-1">
+          {/* Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_220px_auto] gap-3 mb-8">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 placeholder="Cari produk..."
                 value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="pl-10 h-12"
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 h-11"
               />
             </div>
 
-            {/* Sort */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full md:w-48 h-12">
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+              <SelectTrigger className="h-11">
                 <SelectValue placeholder="Urutkan" />
               </SelectTrigger>
               <SelectContent>
@@ -232,10 +297,9 @@ const ProductList = () => {
               </SelectContent>
             </Select>
 
-            {/* Mobile Filter Button */}
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" className="md:hidden h-12">
+                <Button variant="outline" className="md:hidden h-11">
                   <SlidersHorizontal className="w-5 h-5 mr-2" />
                   Filter
                   {hasActiveFilters && (
@@ -250,65 +314,71 @@ const ProductList = () => {
                   <SheetTitle>Filter Produk</SheetTitle>
                 </SheetHeader>
                 <div className="mt-6">
-                  <FilterContent />
+                  {renderFilterContent()}
                 </div>
               </SheetContent>
             </Sheet>
           </div>
 
+          {/* Layout */}
           <div className="flex gap-8">
-            {/* Desktop Sidebar Filters */}
-            <aside className="hidden md:block w-64 shrink-0 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              <div className="sticky top-24 glass-card rounded-xl p-6">
-                <h2 className="font-display text-lg font-semibold mb-6">Filter</h2>
-                <FilterContent />
+            <aside className="hidden md:block w-72 shrink-0">
+              <div className="sticky top-24 rounded-2xl border border-white/70 bg-white/65 backdrop-blur-md p-6 shadow-[0_12px_35px_-30px_rgba(2,16,31,.45)]">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-base font-semibold tracking-tight">Filter</h2>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearFilters}>
+                      Reset
+                    </Button>
+                  )}
+                </div>
+                {renderFilterContent()}
               </div>
             </aside>
 
-            {/* Product Grid */}
-            <div className="flex-1">
-              {paginatedProducts.length > 0 ? (
+            <section className="flex-1">
+              {loading ? (
+                <div className="py-20 text-center text-muted-foreground">Memuat produk...</div>
+              ) : products.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {paginatedProducts.map((product, index) => (
-                      <div
-                        key={product.id}
-                        className="animate-fade-in-up"
-                        style={{ animationDelay: `${0.1 * index}s` }}
-                      >
-                        <ProductCard product={product} />
-                      </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+                    {products.map((product) => (
+                      <ProductCard key={product.id} product={product} />
                     ))}
                   </div>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
+                  {lastPage > 1 && (
                     <div className="flex justify-center items-center gap-2 mt-12">
                       <Button
                         variant="outline"
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        className="h-10"
+                        onClick={() => goToPage(Math.max(1, currentPage - 1))}
                         disabled={currentPage === 1}
                       >
                         Sebelumnya
                       </Button>
 
                       <div className="flex items-center gap-1">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                          <Button
-                            key={page}
-                            variant={currentPage === page ? 'default' : 'ghost'}
-                            size="icon"
-                            onClick={() => setCurrentPage(page)}
-                          >
-                            {page}
-                          </Button>
-                        ))}
+                        {Array.from({ length: lastPage }, (_, i) => i + 1)
+                          .slice(0, 7)
+                          .map((page) => (
+                            <Button
+                              key={page}
+                              className="h-10 w-10"
+                              variant={currentPage === page ? 'default' : 'ghost'}
+                              size="icon"
+                              onClick={() => goToPage(page)}
+                            >
+                              {page}
+                            </Button>
+                          ))}
                       </div>
 
                       <Button
                         variant="outline"
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
+                        className="h-10"
+                        onClick={() => goToPage(Math.min(lastPage, currentPage + 1))}
+                        disabled={currentPage === lastPage}
                       >
                         Selanjutnya
                       </Button>
@@ -320,16 +390,12 @@ const ProductList = () => {
                   <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                     <Search className="w-10 h-10 text-muted-foreground" />
                   </div>
-                  <h3 className="font-display text-xl font-semibold mb-2">
-                    Tidak ada produk ditemukan
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Coba ubah filter atau kata kunci pencarian
-                  </p>
+                  <h3 className="text-xl font-semibold tracking-tight mb-2">Tidak ada produk ditemukan</h3>
+                  <p className="text-muted-foreground mb-4">Coba ubah filter atau kata kunci pencarian</p>
                   <Button onClick={clearFilters}>Reset Filter</Button>
                 </div>
               )}
-            </div>
+            </section>
           </div>
         </main>
       </div>

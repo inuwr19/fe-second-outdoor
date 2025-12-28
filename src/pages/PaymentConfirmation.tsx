@@ -1,241 +1,417 @@
 import { Navbar } from '@/components/Navbar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useCartStore } from '@/stores/cartStore';
-import { useProductStore } from '@/stores/productStore';
-import { useTransactionStore } from '@/stores/transactionStore';
-import { CheckCircle, Clock, Copy, Loader2, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Separator } from '@/components/ui/separator';
+import { apiGet, apiPost } from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
+import {
+  ArrowLeft,
+  Building2,
+  CheckCircle2,
+  Clock3,
+  Landmark,
+  Loader2,
+  RefreshCcw,
+  Wallet,
+  XCircle,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
+declare global {
+  interface Window {
+    snap?: {
+      pay: (
+        token: string,
+        options?: {
+          onSuccess?: (result: any) => void;
+          onPending?: (result: any) => void;
+          onError?: (result: any) => void;
+          onClose?: () => void;
+        }
+      ) => void;
+    };
+  }
+}
+
+type PaymentMethod = 'bank_transfer' | 'va' | 'ewallet';
+
+const PAYMENT_OPTIONS: Array<{
+  id: PaymentMethod;
+  name: string;
+  description: string;
+  icon: any;
+}> = [
+  { id: 'bank_transfer', name: 'Transfer Bank', description: 'Transfer via Midtrans', icon: Landmark },
+  { id: 'va', name: 'Virtual Account', description: 'VA via Midtrans', icon: Building2 },
+  { id: 'ewallet', name: 'E-Wallet', description: 'E-Wallet via Midtrans', icon: Wallet },
+];
+
+type ApiOrder = {
+  order_number: string;
+  status: string;
+  subtotal: number;
+  shipping_fee: number;
+  tax: number;
+  total: number;
+  created_at?: string;
+  user?: { name: string; email: string; phone?: string; address?: string };
+  items: Array<{
+    id: number;
+    product_name: string;
+    size: string;
+    quantity: number;
+    price: number;
+  }>;
+  payment?: {
+    status?: string;
+    snap_token?: string;
+    method?: string | null;
+    transaction_status?: string | null;
+  };
+};
+
+type PaymentStatusRes = {
+  order_status: string;
+  payment: any;
+};
+
 const PaymentConfirmation = () => {
-  const { transactionId } = useParams<{ transactionId: string }>();
   const navigate = useNavigate();
-  const { getTransaction, updateTransactionStatus } = useTransactionStore();
-  const { clearCart, items } = useCartStore();
-  const { markMultipleAsSold } = useProductStore();
+  const { orderNumber } = useParams();
+  const { user } = useAuthStore();
 
-  const [countdown, setCountdown] = useState(10);
-  const [isSimulating, setIsSimulating] = useState(false);
+  const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY as string | undefined;
+  const isProd = (import.meta.env.VITE_MIDTRANS_IS_PRODUCTION as string) === 'true';
+  const snapUrl = isProd ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
 
-  const transaction = getTransaction(transactionId!);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
+
+  const [order, setOrder] = useState<ApiOrder | null>(null);
+  const [status, setStatus] = useState<PaymentStatusRes | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [snapReady, setSnapReady] = useState(false);
 
   useEffect(() => {
-    if (!transaction) {
-      navigate('/cart');
-    }
-  }, [transaction, navigate]);
+    if (!user) navigate('/login');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
-  if (!transaction) {
-    return null;
-  }
+  useEffect(() => {
+    if (!clientKey) return;
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const paymentInstructions = {
-    bank_transfer: {
-      title: 'Transfer Bank',
-      steps: [
-        'Buka aplikasi mobile banking atau ATM',
-        'Pilih menu Transfer',
-        'Masukkan nomor rekening: 1234567890 (BCA)',
-        `Transfer sejumlah ${formatPrice(transaction.total)}`,
-        'Simpan bukti transfer',
-      ],
-      account: '1234567890',
-      bank: 'BCA - PT Second Outdoor Indonesia',
-    },
-    e_wallet: {
-      title: 'E-Wallet',
-      steps: [
-        'Buka aplikasi e-wallet pilihan Anda',
-        'Scan QR Code atau masukkan nomor',
-        `Bayar sejumlah ${formatPrice(transaction.total)}`,
-        'Tunggu konfirmasi pembayaran',
-      ],
-      account: '081234567890',
-      bank: 'Second Outdoor',
-    },
-    cod: {
-      title: 'COD (Bayar di Tempat)',
-      steps: [
-        'Pesanan akan segera diproses',
-        'Kurir akan menghubungi Anda',
-        'Siapkan uang pas saat kurir tiba',
-        'Pembayaran dilakukan saat barang diterima',
-      ],
-      account: '-',
-      bank: '-',
-    },
-  };
-
-  const instruction = paymentInstructions[transaction.paymentMethod];
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Berhasil disalin!');
-  };
-
-  const simulatePayment = async (success: boolean) => {
-    setIsSimulating(true);
-
-    // Simulate payment verification
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    if (success) {
-      updateTransactionStatus(transaction.id, 'success');
-
-      // Mark products as sold
-      const productIds = transaction.items.map((item) => item.product.id);
-      markMultipleAsSold(productIds);
-
-      // Clear cart
-      clearCart();
-
-      navigate(`/transaction/result?status=success&txnId=${transaction.id}`);
-    } else {
-      updateTransactionStatus(transaction.id, 'failed');
-      navigate(`/transaction/result?status=failed&txnId=${transaction.id}`);
+    const existing = document.querySelector(`script[src="${snapUrl}"]`) as HTMLScriptElement | null;
+    if (existing) {
+      setSnapReady(true);
+      return;
     }
 
-    setIsSimulating(false);
+    const s = document.createElement('script');
+    s.src = snapUrl;
+    s.setAttribute('data-client-key', clientKey);
+    s.async = true;
+    s.onload = () => setSnapReady(true);
+    s.onerror = () => setSnapReady(false);
+    document.body.appendChild(s);
+  }, [clientKey, snapUrl]);
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
+
+  const fetchAll = async () => {
+    if (!orderNumber) return;
+    setLoading(true);
+    try {
+      const [orderJson, statusJson] = await Promise.all([
+        apiGet<ApiOrder>(`/orders/${orderNumber}`),
+        apiGet<PaymentStatusRes>(`/payments/${orderNumber}/status`),
+      ]);
+
+      setOrder(orderJson);
+      setStatus(statusJson);
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Terjadi kesalahan.');
+      setOrder(null);
+      setStatus(null);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderNumber]);
+
+  const refreshStatus = async () => {
+    if (!orderNumber) return;
+    setRefreshing(true);
+    try {
+      await apiPost(`/payments/${orderNumber}/refresh`, {});
+      await fetchAll();
+      toast.success('Status pembayaran diperbarui.');
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Gagal refresh status.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const snapToken = order?.payment?.snap_token;
+
+  const orderStatus = status?.order_status ?? order?.status;
+  const trxStatus = status?.payment?.transaction_status ?? order?.payment?.transaction_status;
+
+  const isPaid = orderStatus === 'paid';
+  const isPending = orderStatus === 'pending_payment' || trxStatus === 'pending' || order?.payment?.status === 'pending';
+  const isExpired = orderStatus === 'expired';
+  const isFailed = orderStatus === 'failed';
+
+  const statusUI = useMemo(() => {
+    if (isPaid) return { label: 'Pembayaran Berhasil', variant: 'default' as const, icon: CheckCircle2 };
+    if (isExpired) return { label: 'Pembayaran Kedaluwarsa', variant: 'destructive' as const, icon: XCircle };
+    if (isFailed) return { label: 'Pembayaran Gagal', variant: 'destructive' as const, icon: XCircle };
+    if (isPending) return { label: 'Menunggu Pembayaran', variant: 'secondary' as const, icon: Clock3 };
+    return { label: 'Diproses', variant: 'secondary' as const, icon: Clock3 };
+  }, [isPaid, isExpired, isFailed, isPending]);
+
+  const handlePay = async () => {
+    if (!snapToken) {
+      toast.error('Snap token tidak tersedia.');
+      return;
+    }
+    if (!snapReady || !window.snap?.pay) {
+      toast.error('Midtrans Snap belum siap. Coba refresh halaman.');
+      return;
+    }
+
+    window.snap.pay(snapToken, {
+      onSuccess: async () => {
+        await refreshStatus();
+      },
+      onPending: async () => {
+        await refreshStatus();
+      },
+      onError: async () => {
+        await refreshStatus();
+        toast.error('Pembayaran gagal.');
+      },
+      onClose: async () => {
+        await refreshStatus();
+        toast.info('Popup pembayaran ditutup.');
+      },
+    });
+  };
+
+  if (!user) return null;
 
   return (
     <>
       <Helmet>
         <title>Konfirmasi Pembayaran - Second Outdoor</title>
-        <meta name="description" content="Selesaikan pembayaran Anda sesuai instruksi." />
+        <meta name="description" content="Cek status dan selesaikan pembayaran pesanan Anda." />
       </Helmet>
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            {/* Status Header */}
-            <div className="text-center mb-8 animate-fade-in">
-              <div className="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-10 h-10 text-warning" />
-              </div>
-              <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-                Menunggu Pembayaran
-              </h1>
-              <p className="text-muted-foreground">
-                Selesaikan pembayaran dalam waktu 24 jam
+          <Button variant="ghost" onClick={() => navigate('/')} className="mb-6">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Kembali
+          </Button>
+
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">Konfirmasi Pembayaran</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {orderNumber ? `Order: ${orderNumber}` : 'Order tidak ditemukan'}
               </p>
             </div>
 
-            {/* Payment Info Card */}
-            <div className="glass-card rounded-xl p-6 mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Pembayaran</p>
-                  <p className="font-display text-2xl font-bold text-primary">
-                    {formatPrice(transaction.total)}
-                  </p>
-                </div>
-                <Badge className="bg-warning text-warning-foreground">Pending</Badge>
-              </div>
-
-              {transaction.paymentMethod !== 'cod' && (
-                <div className="p-4 rounded-lg bg-muted/50 mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">{instruction.bank}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(instruction.account)}
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      Salin
-                    </Button>
-                  </div>
-                  <p className="font-mono text-xl font-bold">{instruction.account}</p>
-                </div>
-              )}
-
-              {/* Instructions */}
-              <div>
-                <h3 className="font-semibold mb-4">Cara Pembayaran ({instruction.title})</h3>
-                <ol className="space-y-3">
-                  {instruction.steps.map((step, index) => (
-                    <li key={index} className="flex gap-3">
-                      <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-sm flex items-center justify-center shrink-0 font-medium">
-                        {index + 1}
-                      </span>
-                      <span className="text-muted-foreground">{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-
-            {/* Order Details */}
-            <div className="glass-card rounded-xl p-6 mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              <h3 className="font-semibold mb-4">Detail Pesanan</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">ID Transaksi</span>
-                  <span className="font-mono">{transaction.id}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Jumlah Item</span>
-                  <span>{transaction.items.length} item</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Metode Pembayaran</span>
-                  <span className="capitalize">{transaction.paymentMethod.replace('_', ' ')}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Simulation Buttons (Demo) */}
-            <div className="glass-card rounded-xl p-6 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-              <p className="text-sm text-muted-foreground text-center mb-4">
-                Demo: Simulasi hasil pembayaran
-              </p>
-              <div className="flex gap-4">
-                <Button
-                  onClick={() => simulatePayment(true)}
-                  disabled={isSimulating}
-                  className="flex-1 bg-success hover:bg-success/90"
-                >
-                  {isSimulating ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                  )}
-                  Sukses
-                </Button>
-                <Button
-                  onClick={() => simulatePayment(false)}
-                  disabled={isSimulating}
-                  variant="destructive"
-                  className="flex-1"
-                >
-                  {isSimulating ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <XCircle className="w-4 h-4 mr-2" />
-                  )}
-                  Gagal
-                </Button>
-              </div>
-            </div>
+            <Badge variant={statusUI.variant} className="px-3 py-1">
+              <statusUI.icon className="w-4 h-4 mr-2 inline-block" />
+              {statusUI.label}
+            </Badge>
           </div>
+
+          {loading ? (
+            <div className="glass-card rounded-xl p-6 text-muted-foreground flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Memuat data…
+            </div>
+          ) : !order ? (
+            <div className="glass-card rounded-xl p-6">
+              <p className="text-sm text-destructive">Data order tidak tersedia.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="glass-card rounded-xl p-6">
+                  <h2 className="text-lg font-semibold mb-4">Data Penerima</h2>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Nama</Label>
+                      <InputLike value={order.user?.name ?? user.name} />
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <InputLike value={order.user?.email ?? user.email} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label>No. HP</Label>
+                      <InputLike value={(order.user?.phone ?? user.phone ?? '-') as string} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label>Alamat</Label>
+                      <div className="mt-1 rounded-md border border-input bg-muted/30 px-3 py-2 text-sm whitespace-pre-line">
+                        {order.user?.address ?? user.address ?? '-'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="glass-card rounded-xl p-6">
+                  <h2 className="text-lg font-semibold mb-4">Item Pesanan</h2>
+                  <div className="space-y-3">
+                    {order.items?.map((it) => (
+                      <div key={it.id} className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-medium">{it.product_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Size {it.size} • Qty: {it.quantity}
+                          </p>
+                        </div>
+                        <p className="font-semibold">{formatPrice(it.price)}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 mt-6">
+                    <Button variant="outline" onClick={refreshStatus} disabled={refreshing} className="h-11">
+                      {refreshing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Refreshing…
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCcw className="w-4 h-4 mr-2" />
+                          Refresh Status
+                        </>
+                      )}
+                    </Button>
+
+                    {(isExpired || isFailed) && (
+                      <Button onClick={() => navigate('/products')} className="h-11">
+                        Kembali Belanja
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-1">
+                <div className="glass-card rounded-xl p-6 sticky top-24">
+                  <h2 className="text-xl font-semibold mb-4">Ringkasan Pembayaran</h2>
+
+                  <div className="mb-5">
+                    <Label className="text-sm font-semibold">Metode Pembayaran</Label>
+                    <RadioGroup
+                      value={paymentMethod}
+                      onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
+                      className="space-y-2 mt-2"
+                    >
+                      {PAYMENT_OPTIONS.map((m) => (
+                        <label
+                          key={m.id}
+                          htmlFor={m.id}
+                          className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+                            paymentMethod === m.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <RadioGroupItem value={m.id} id={m.id} />
+                          <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                            <m.icon className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium">{m.name}</div>
+                            <div className="text-xs text-muted-foreground">{m.description}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </RadioGroup>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Setelah klik bayar, Midtrans akan menampilkan opsi pembayaran yang tersedia.
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-4 mt-5">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="font-medium">{formatPrice(order.subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Ongkos Kirim</span>
+                      <span className="font-medium">{formatPrice(order.shipping_fee)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">PPN</span>
+                      <span className="font-medium">{formatPrice(order.tax)}</span>
+                    </div>
+
+                    <Separator />
+
+                    <div className="flex justify-between">
+                      <span className="font-semibold">Total</span>
+                      <span className="text-xl font-bold text-primary">{formatPrice(order.total)}</span>
+                    </div>
+
+                    {!isPaid && (
+                      <Button onClick={handlePay} disabled={!snapToken || !snapReady} className="w-full h-12 mt-2 text-base">
+                        {!snapReady ? 'Memuat Midtrans…' : `Bayar ${formatPrice(order.total)}`}
+                      </Button>
+                    )}
+
+                    {isPaid && (
+                      <Button onClick={() => navigate('/orders')} className="w-full h-12 mt-2 text-base">
+                        Lihat Riwayat Pesanan
+                      </Button>
+                    )}
+
+                    <div className="pt-2 text-xs text-muted-foreground space-y-1">
+                      <div className="flex justify-between">
+                        <span>Status Order</span>
+                        <span className="font-medium">{orderStatus ?? '-'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Status Midtrans</span>
+                        <span className="font-medium">{trxStatus ?? '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </>
   );
 };
+
+const InputLike = ({ value }: { value: string }) => (
+  <div className="mt-1 h-11 rounded-md border border-input bg-muted/30 px-3 flex items-center text-sm">
+    {value}
+  </div>
+);
 
 export default PaymentConfirmation;
