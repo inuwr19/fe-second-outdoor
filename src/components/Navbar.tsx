@@ -1,8 +1,3 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingBag, User, Menu, X, LogOut, LayoutDashboard, History, FileText } from 'lucide-react';
-import { useState } from 'react';
-import { useAuthStore } from '@/stores/authStore';
-import { useCartStore } from '@/stores/cartStore';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,6 +6,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore';
+import { History, LayoutDashboard, LogOut, Menu, ShoppingBag, User, X } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,18 +27,20 @@ export const Navbar = () => {
   const navLinks = [
     { path: '/', label: 'Home' },
     { path: '/products', label: 'Shop' },
+    { path: '/about', label: 'About' },
+    // { path: '/contact', label: 'Contact' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <nav className="sticky top-0 z-50 glass-card border-b">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-6 md:px-12">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <span className="font-display text-2xl font-bold text-primary">Thrift</span>
-            <span className="font-display text-2xl font-light text-foreground">Haven</span>
+            <span className="font-display text-2xl font-bold text-primary">Second</span>
+            <span className="font-display text-2xl font-light text-foreground">Outdoor</span>
           </Link>
 
           {/* Desktop Navigation */}

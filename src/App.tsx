@@ -1,23 +1,24 @@
-import { Toaster } from "@/components/ui/toaster";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import ProductList from "./pages/ProductList";
-import ProductDetail from "./pages/ProductDetail";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import About from "./pages/About";
 import Cart from "./pages/Cart";
+import Dashboard from "./pages/Dashboard";
+import History from "./pages/History";
+import Index from "./pages/Index";
+import Invoice from "./pages/Invoice";
+import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
 import Payment from "./pages/Payment";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
-import TransactionResult from "./pages/TransactionResult";
-import History from "./pages/History";
+import ProductDetail from "./pages/ProductDetail";
+import ProductList from "./pages/ProductList";
 import Profile from "./pages/Profile";
-import Invoice from "./pages/Invoice";
-import NotFound from "./pages/NotFound";
+import TransactionResult from "./pages/TransactionResult";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/about" element={<About />} />
             <Route path="/products" element={<ProductList />} />
             <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />

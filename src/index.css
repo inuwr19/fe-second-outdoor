@@ -6,110 +6,99 @@
 
 @layer base {
   :root {
-    --background: 40 30% 97%;
-    --foreground: 25 25% 15%;
+    /* === Blue/AI landing palette (mirip gambar) === */
+    --background: 205 100% 96%;
+    --foreground: 215 35% 16%;
 
-    --card: 40 25% 95%;
-    --card-foreground: 25 25% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 35% 16%;
 
-    --popover: 40 30% 97%;
-    --popover-foreground: 25 25% 15%;
+    --popover: 205 100% 97%;
+    --popover-foreground: 215 35% 16%;
 
-    --primary: 16 60% 52%;
-    --primary-foreground: 40 30% 97%;
+    /* tombol gelap (Get Started) */
+    --primary: 211 72% 16%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 145 30% 45%;
-    --secondary-foreground: 40 30% 97%;
+    --secondary: 223 56% 52%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 40 20% 90%;
-    --muted-foreground: 25 15% 45%;
+    --muted: 210 50% 95%;
+    --muted-foreground: 215 18% 40%;
 
-    --accent: 35 80% 55%;
-    --accent-foreground: 25 25% 15%;
+    --accent: 200 95% 92%;
+    --accent-foreground: 215 35% 16%;
 
     --destructive: 0 65% 50%;
-    --destructive-foreground: 40 30% 97%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 35 20% 85%;
-    --input: 35 20% 85%;
-    --ring: 16 60% 52%;
+    --border: 210 45% 88%;
+    --input: 210 45% 88%;
+    --ring: 211 72% 16%;
 
-    --radius: 0.75rem;
+    /* radius lebih “landing page” */
+    --radius: 1.25rem;
 
     --success: 145 50% 42%;
-    --success-foreground: 40 30% 97%;
+    --success-foreground: 0 0% 100%;
 
     --warning: 35 90% 50%;
-    --warning-foreground: 25 25% 15%;
-
-    --vintage-cream: 45 40% 94%;
-    --vintage-brown: 25 35% 30%;
-    --vintage-terracotta: 16 60% 52%;
-    --vintage-sage: 145 30% 45%;
-    --vintage-gold: 35 80% 55%;
+    --warning-foreground: 215 35% 16%;
 
     --font-display: 'Playfair Display', serif;
     --font-body: 'DM Sans', sans-serif;
 
-    --sidebar-background: 40 25% 95%;
-    --sidebar-foreground: 25 25% 15%;
-    --sidebar-primary: 16 60% 52%;
-    --sidebar-primary-foreground: 40 30% 97%;
-    --sidebar-accent: 145 30% 45%;
-    --sidebar-accent-foreground: 40 30% 97%;
-    --sidebar-border: 35 20% 85%;
-    --sidebar-ring: 16 60% 52%;
+    --sidebar-background: 205 100% 96%;
+    --sidebar-foreground: 215 35% 16%;
+    --sidebar-primary: 211 72% 16%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 95% 92%;
+    --sidebar-accent-foreground: 215 35% 16%;
+    --sidebar-border: 210 45% 88%;
+    --sidebar-ring: 211 72% 16%;
   }
 
   .dark {
-    --background: 25 25% 10%;
-    --foreground: 40 30% 95%;
+    /* kalau butuh dark mode nanti, Anda bisa tuning ulang */
+    --background: 215 35% 8%;
+    --foreground: 210 40% 98%;
 
-    --card: 25 20% 15%;
-    --card-foreground: 40 30% 95%;
+    --card: 215 35% 12%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 25 25% 10%;
-    --popover-foreground: 40 30% 95%;
+    --popover: 215 35% 10%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 16 55% 55%;
-    --primary-foreground: 25 25% 10%;
+    --primary: 205 100% 92%;
+    --primary-foreground: 211 72% 16%;
 
-    --secondary: 145 25% 40%;
-    --secondary-foreground: 40 30% 95%;
+    --secondary: 223 56% 52%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 25 15% 25%;
-    --muted-foreground: 40 20% 65%;
+    --muted: 215 25% 18%;
+    --muted-foreground: 210 15% 70%;
 
-    --accent: 35 75% 50%;
-    --accent-foreground: 25 25% 10%;
+    --accent: 215 25% 18%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 60% 45%;
-    --destructive-foreground: 40 30% 95%;
-
-    --border: 25 15% 25%;
-    --input: 25 15% 25%;
-    --ring: 16 55% 55%;
+    --border: 215 25% 18%;
+    --input: 215 25% 18%;
+    --ring: 205 100% 92%;
 
     --success: 145 45% 38%;
-    --success-foreground: 40 30% 95%;
+    --success-foreground: 0 0% 100%;
 
     --warning: 35 85% 45%;
-    --warning-foreground: 25 25% 10%;
+    --warning-foreground: 215 35% 10%;
 
-    --vintage-cream: 40 20% 20%;
-    --vintage-brown: 25 30% 70%;
-    --vintage-terracotta: 16 55% 55%;
-    --vintage-sage: 145 25% 40%;
-    --vintage-gold: 35 75% 50%;
-
-    --sidebar-background: 25 20% 15%;
-    --sidebar-foreground: 40 30% 95%;
-    --sidebar-primary: 16 55% 55%;
-    --sidebar-primary-foreground: 25 25% 10%;
-    --sidebar-accent: 145 25% 40%;
-    --sidebar-accent-foreground: 40 30% 95%;
-    --sidebar-border: 25 15% 25%;
-    --sidebar-ring: 16 55% 55%;
+    --sidebar-background: 215 35% 12%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 205 100% 92%;
+    --sidebar-primary-foreground: 211 72% 16%;
+    --sidebar-accent: 215 25% 18%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 25% 18%;
+    --sidebar-ring: 205 100% 92%;
   }
 }
 
@@ -138,12 +127,38 @@
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg;
+  /* === Background mirip gambar: gradient + grid === */
+  .ai-grid-bg {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(900px circle at 15% 10%, hsl(196 92% 87% / 0.95), transparent 55%),
+      radial-gradient(800px circle at 75% 15%, hsl(210 100% 92% / 0.85), transparent 60%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(205 100% 98%));
   }
 
-  .vintage-shadow {
-    box-shadow: 0 4px 20px -4px hsl(var(--vintage-brown) / 0.15);
+  .ai-grid-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, hsl(210 60% 80% / 0.35) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(210 60% 80% / 0.35) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  /* shell besar rounded seperti “panel” di gambar */
+  .ai-shell {
+    @apply relative mx-auto max-w-6xl rounded-[32px] border border-white/60 bg-white/30 backdrop-blur-md;
+    box-shadow: 0 22px 70px -45px rgba(2, 16, 31, 0.55);
+  }
+
+  /* update: glass-card agar mirip card putih transparan di gambar */
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-md border border-white/60;
+    box-shadow: 0 10px 35px -28px rgba(2, 16, 31, 0.35);
   }
 
   .hover-lift {
@@ -152,6 +167,6 @@
 
   .hover-lift:hover {
     @apply -translate-y-1;
-    box-shadow: 0 8px 30px -8px hsl(var(--vintage-brown) / 0.2);
+    box-shadow: 0 18px 55px -45px rgba(2, 16, 31, 0.55);
   }
 }

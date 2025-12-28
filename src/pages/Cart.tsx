@@ -1,12 +1,12 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
-import { useCartStore } from '@/stores/cartStore';
-import { useAuthStore } from '@/stores/authStore';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore';
+import { ArrowRight, ShoppingBag, Trash2 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ const Cart = () => {
   return (
     <>
       <Helmet>
-        <title>Keranjang Belanja - Thrift Haven</title>
+        <title>Keranjang Belanja - Second Outdoor</title>
         <meta name="description" content="Lihat dan kelola item di keranjang belanja Anda." />
       </Helmet>
 
@@ -79,7 +79,7 @@ const Cart = () => {
                     <div className="flex-1 flex flex-col">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <Link 
+                          <Link
                             to={`/products/${item.product.id}`}
                             className="font-medium hover:text-primary transition-colors"
                           >
@@ -132,9 +132,9 @@ const Cart = () => {
                       <span className="text-muted-foreground">Ongkos Kirim</span>
                       <span className="font-medium text-success">Gratis</span>
                     </div>
-                    
+
                     <Separator />
-                    
+
                     <div className="flex justify-between">
                       <span className="font-semibold">Total</span>
                       <span className="font-display text-xl font-bold text-primary">

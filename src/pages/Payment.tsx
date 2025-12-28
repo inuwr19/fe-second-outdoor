@@ -1,18 +1,17 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CreditCard, Building, Wallet, ArrowLeft, Loader2 } from 'lucide-react';
-import { useCartStore } from '@/stores/cartStore';
-import { useAuthStore } from '@/stores/authStore';
-import { useTransactionStore } from '@/stores/transactionStore';
-import { useProductStore } from '@/stores/productStore';
-import { PaymentMethod } from '@/types';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore';
+import { useProductStore } from '@/stores/productStore';
+import { useTransactionStore } from '@/stores/transactionStore';
+import { PaymentMethod } from '@/types';
+import { ArrowLeft, Building, CreditCard, Loader2, Wallet } from 'lucide-react';
+import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useNavigate } from 'react-router-dom';
 
 const Payment = () => {
   const navigate = useNavigate();
@@ -20,7 +19,7 @@ const Payment = () => {
   const { user } = useAuthStore();
   const { createTransaction } = useTransactionStore();
   const { markMultipleAsSold } = useProductStore();
-  
+
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -69,23 +68,23 @@ const Payment = () => {
 
   const handlePay = async () => {
     setIsProcessing(true);
-    
+
     // Simulate payment processing
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    
+
     // Create transaction
     const transaction = createTransaction(items, paymentMethod, user.id);
-    
+
     // Navigate to confirmation
     navigate(`/payment/confirmation/${transaction.id}`);
-    
+
     setIsProcessing(false);
   };
 
   return (
     <>
       <Helmet>
-        <title>Pembayaran - Thrift Haven</title>
+        <title>Pembayaran - Second Outdoor</title>
         <meta name="description" content="Selesaikan pembayaran untuk pesanan Anda." />
       </Helmet>
 
@@ -147,7 +146,7 @@ const Payment = () => {
               {/* Payment Method */}
               <div className="glass-card rounded-xl p-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
                 <h2 className="font-display text-lg font-semibold mb-4">Metode Pembayaran</h2>
-                
+
                 <RadioGroup
                   value={paymentMethod}
                   onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
@@ -195,9 +194,9 @@ const Payment = () => {
                     <span className="text-muted-foreground">PPN (11%)</span>
                     <span className="font-medium">{formatPrice(tax)}</span>
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div className="flex justify-between">
                     <span className="font-semibold">Total</span>
                     <span className="font-display text-xl font-bold text-primary">

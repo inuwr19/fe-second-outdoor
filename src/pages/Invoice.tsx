@@ -1,11 +1,11 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { Printer, ArrowLeft } from 'lucide-react';
-import { useTransactionStore } from '@/stores/transactionStore';
-import { useAuthStore } from '@/stores/authStore';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useAuthStore } from '@/stores/authStore';
+import { useTransactionStore } from '@/stores/transactionStore';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const Invoice = () => {
   const { transactionId } = useParams<{ transactionId: string }>();
@@ -29,7 +29,7 @@ const Invoice = () => {
 
   return (
     <>
-      <Helmet><title>Invoice {invoice.invoiceNumber} - Thrift Haven</title></Helmet>
+      <Helmet><title>Invoice {invoice.invoiceNumber} - Second Outdoor</title></Helmet>
       <div className="min-h-screen bg-background">
         <div className="print:hidden"><Navbar /></div>
         <main className="container mx-auto px-4 py-8 max-w-3xl">
@@ -39,7 +39,7 @@ const Invoice = () => {
           </div>
           <div className="bg-card rounded-xl p-8 shadow-lg print:shadow-none">
             <div className="flex justify-between items-start mb-8">
-              <div><h1 className="font-display text-2xl font-bold text-primary">Thrift Haven</h1><p className="text-sm text-muted-foreground">Sustainable Fashion Store</p></div>
+              <div><h1 className="font-display text-2xl font-bold text-primary">Second Outdoor</h1><p className="text-sm text-muted-foreground">Sustainable Fashion Store</p></div>
               <div className="text-right"><p className="font-mono text-lg font-bold">{invoice.invoiceNumber}</p><p className="text-sm text-muted-foreground">{formatDate(invoice.createdAt)}</p></div>
             </div>
             <Separator className="my-6" />
@@ -49,7 +49,7 @@ const Invoice = () => {
             </div>
             <table className="w-full mb-8"><thead><tr className="border-b"><th className="text-left py-3">Produk</th><th className="text-center py-3">Qty</th><th className="text-right py-3">Harga</th></tr></thead><tbody>{invoice.items.map((item) => (<tr key={item.product.id} className="border-b"><td className="py-3">{item.product.name}<br /><span className="text-sm text-muted-foreground">Size: {item.product.size}</span></td><td className="text-center py-3">{item.quantity}</td><td className="text-right py-3">{formatPrice(item.product.price)}</td></tr>))}</tbody></table>
             <div className="flex justify-end"><div className="w-64 space-y-2"><div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(invoice.subtotal)}</span></div><div className="flex justify-between"><span>PPN (11%)</span><span>{formatPrice(invoice.tax)}</span></div><Separator /><div className="flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">{formatPrice(invoice.total)}</span></div></div></div>
-            <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground"><p>Terima kasih telah berbelanja di Thrift Haven! 🌿</p></div>
+            <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground"><p>Terima kasih telah berbelanja di Second Outdoor! 🌿</p></div>
           </div>
         </main>
       </div>

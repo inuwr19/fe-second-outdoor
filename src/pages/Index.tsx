@@ -1,10 +1,11 @@
-import { Link } from 'react-router-dom';
-import { ArrowRight, Leaf, Sparkles, Heart } from 'lucide-react';
-import { useProductStore } from '@/stores/productStore';
-import { ProductCard } from '@/components/ProductCard';
+import { Footer } from '@/components/Footer';
 import { Navbar } from '@/components/Navbar';
+import { ProductCard } from '@/components/ProductCard';
 import { Button } from '@/components/ui/button';
+import { useProductStore } from '@/stores/productStore';
+import { ArrowRight, Heart, Leaf, Sparkles } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   const { products } = useProductStore();
@@ -13,7 +14,7 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>Thrift Haven - Sustainable Fashion Store</title>
+        <title>Second Outdoor - Sustainable Fashion Store</title>
         <meta name="description" content="Temukan pakaian vintage berkualitas dengan harga terjangkau. Sustainable fashion untuk gaya unik Anda." />
       </Helmet>
 
@@ -23,18 +24,18 @@ const Index = () => {
         {/* Hero Section */}
         <section className="relative overflow-hidden py-20 lg:py-32">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
-          <div className="container mx-auto px-4 relative">
+          <div className="container mx-auto px-6 md:px-12 relative">
             <div className="max-w-3xl mx-auto text-center animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 text-secondary mb-6">
+              {/* <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 text-secondary mb-6">
                 <Leaf className="w-4 h-4" />
                 <span className="text-sm font-medium">Sustainable Fashion</span>
-              </div>
+              </div> */}
               <h1 className="font-display text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
                 Temukan Gaya Unik dengan{' '}
                 <span className="text-primary">Thrift Fashion</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-                Koleksi pakaian vintage berkualitas. Setiap item unik, hanya satu di dunia. 
+                Koleksi pakaian vintage berkualitas. Setiap item unik, hanya satu di dunia.
                 Bergaya dengan sustainable fashion.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -54,7 +55,7 @@ const Index = () => {
 
         {/* Features */}
         <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-6 md:px-12">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 { icon: Sparkles, title: 'Kurasi Berkualitas', desc: 'Setiap item dipilih dengan teliti untuk kualitas terbaik' },
@@ -75,7 +76,7 @@ const Index = () => {
 
         {/* Featured Products */}
         <section className="py-20">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-6 md:px-12">
             <div className="flex items-center justify-between mb-10">
               <h2 className="font-display text-2xl md:text-3xl font-bold">Koleksi Terbaru</h2>
               <Button asChild variant="ghost">
@@ -92,12 +93,7 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="py-8 border-t">
-          <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
-            <p>© 2024 Thrift Haven. All rights reserved.</p>
-          </div>
-        </footer>
+        <Footer />
       </div>
     </>
   );

@@ -1,35 +1,35 @@
-import { useState, useMemo } from 'react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
-import { useProductStore } from '@/stores/productStore';
-import { ProductCard } from '@/components/ProductCard';
 import { Navbar } from '@/components/Navbar';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { ProductCard } from '@/components/ProductCard';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
 } from '@/components/ui/sheet';
-import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Helmet } from 'react-helmet-async';
 import { categories, conditions } from '@/data/mockData';
+import { useProductStore } from '@/stores/productStore';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 
 const ITEMS_PER_PAGE = 8;
 
 const ProductList = () => {
   const { products } = useProductStore();
-  
+
   // Filters
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
@@ -113,11 +113,11 @@ const ProductList = () => {
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = 
-    search || 
-    category !== 'All' || 
-    condition !== 'All' || 
-    priceRange[0] > 0 || 
+  const hasActiveFilters =
+    search ||
+    category !== 'All' ||
+    condition !== 'All' ||
+    priceRange[0] > 0 ||
     priceRange[1] < maxPrice;
 
   const FilterContent = () => (
@@ -185,14 +185,14 @@ const ProductList = () => {
   return (
     <>
       <Helmet>
-        <title>Koleksi Thrift - Thrift Haven</title>
+        <title>Koleksi Thrift - Second Outdoor</title>
         <meta name="description" content="Jelajahi koleksi pakaian thrift berkualitas. Temukan item vintage unik dengan harga terjangkau." />
       </Helmet>
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-6 md:px-12 py-8">
           {/* Header */}
           <div className="mb-8 animate-fade-in">
             <h1 className="font-display text-3xl font-bold text-foreground mb-2">
@@ -291,7 +291,7 @@ const ProductList = () => {
                       >
                         Sebelumnya
                       </Button>
-                      
+
                       <div className="flex items-center gap-1">
                         {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                           <Button

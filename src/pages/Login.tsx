@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Eye, EyeOff, ShoppingBag } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
+import { Eye, EyeOff, Loader2, ShoppingBag } from 'lucide-react';
+import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-    
+
     const success = await login(email, password);
     if (success) {
       navigate('/dashboard');
@@ -27,10 +27,10 @@ const Login = () => {
   return (
     <>
       <Helmet>
-        <title>Login - Thrift Haven</title>
-        <meta name="description" content="Login ke Thrift Haven untuk mulai berbelanja pakaian thrift berkualitas." />
+        <title>Login - Second Outdoor</title>
+        <meta name="description" content="Login ke Second Outdoor untuk mulai berbelanja pakaian thrift berkualitas." />
       </Helmet>
-      
+
       <div className="min-h-screen flex">
         {/* Left Panel - Decorative */}
         <div className="hidden lg:flex lg:w-1/2 bg-primary relative overflow-hidden">
@@ -38,10 +38,10 @@ const Login = () => {
           <div className="relative z-10 flex flex-col justify-center px-12 text-primary-foreground">
             <ShoppingBag className="w-16 h-16 mb-8" />
             <h1 className="font-display text-5xl font-bold mb-4">
-              Thrift Haven
+              Second Outdoor
             </h1>
             <p className="text-xl opacity-90 max-w-md">
-              Temukan pakaian vintage berkualitas dengan harga terjangkau. 
+              Temukan pakaian vintage berkualitas dengan harga terjangkau.
               Setiap item unik, hanya satu di dunia.
             </p>
             <div className="mt-12 space-y-4">

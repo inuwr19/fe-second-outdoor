@@ -1,13 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Save, Loader2 } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/authStore';
+import { Loader2, Save } from 'lucide-react';
+import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { toast } from 'sonner';
 
 const Profile = () => {
   const { user, updateUser } = useAuthStore();
@@ -31,7 +30,7 @@ const Profile = () => {
   return (
     <>
       <Helmet>
-        <title>Edit Profil - Thrift Haven</title>
+        <title>Edit Profil - Second Outdoor</title>
       </Helmet>
       <div className="min-h-screen bg-background">
         <Navbar />

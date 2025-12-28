@@ -1,13 +1,13 @@
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Check, Heart, Share2 } from 'lucide-react';
-import { useProductStore } from '@/stores/productStore';
-import { useCartStore } from '@/stores/cartStore';
 import { Navbar } from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
+import { useCartStore } from '@/stores/cartStore';
+import { useProductStore } from '@/stores/productStore';
+import { ArrowLeft, Check, Heart, Share2, ShoppingBag } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,12 +36,12 @@ const ProductDetail = () => {
       toast.error('Produk sudah habis terjual');
       return;
     }
-    
+
     if (inCart) {
       toast.info('Produk sudah ada di keranjang');
       return;
     }
-    
+
     const success = addToCart(product);
     if (success) {
       toast.success('Berhasil ditambahkan ke keranjang!');
@@ -73,7 +73,7 @@ const ProductDetail = () => {
   return (
     <>
       <Helmet>
-        <title>{product.name} - Thrift Haven</title>
+        <title>{product.name} - Second Outdoor</title>
         <meta name="description" content={product.description} />
       </Helmet>
 
@@ -102,7 +102,7 @@ const ProductDetail = () => {
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
-                
+
                 {isSoldOut && (
                   <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                     <Badge variant="destructive" className="text-2xl px-8 py-4">
@@ -123,7 +123,7 @@ const ProductDetail = () => {
                 <Badge variant="outline" className="mb-4">
                   {product.category}
                 </Badge>
-                
+
                 <h1 className="font-display text-3xl lg:text-4xl font-bold text-foreground mb-4">
                   {product.name}
                 </h1>
@@ -190,26 +190,26 @@ const ProductDetail = () => {
                       </>
                     )}
                   </Button>
-                  
+
                   <Button variant="outline" size="lg" className="h-14">
                     <Heart className="w-5 h-5" />
                   </Button>
-                  
+
                   <Button variant="outline" size="lg" className="h-14">
                     <Share2 className="w-5 h-5" />
                   </Button>
                 </div>
 
                 {/* Thrift Notice */}
-                <div className="mt-8 p-4 rounded-lg bg-secondary/10 border border-secondary/20">
+                {/* <div className="mt-8 p-4 rounded-lg bg-secondary/10 border border-secondary/20">
                   <p className="text-sm text-secondary font-medium mb-1">
                     🌿 Sustainable Fashion
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Item thrift adalah barang unik dengan stok terbatas (1 pcs). 
+                    Item thrift adalah barang unik dengan stok terbatas (1 pcs).
                     Segera checkout sebelum kehabisan!
                   </p>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

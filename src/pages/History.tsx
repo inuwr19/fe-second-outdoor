@@ -1,28 +1,28 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { FileText, Filter, ChevronDown } from 'lucide-react';
+import { Navbar } from '@/components/Navbar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { useAuthStore } from '@/stores/authStore';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { TransactionStatus } from '@/types';
-import { Navbar } from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { FileText, Filter } from 'lucide-react';
+import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
 
 const History = () => {
   const { user } = useAuthStore();
@@ -30,7 +30,7 @@ const History = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const transactions = user ? getUserTransactions(user.id) : [];
-  
+
   const filteredTransactions = statusFilter === 'all'
     ? transactions
     : transactions.filter((t) => t.status === statusFilter);
@@ -70,7 +70,7 @@ const History = () => {
   return (
     <>
       <Helmet>
-        <title>Riwayat Transaksi - Thrift Haven</title>
+        <title>Riwayat Transaksi - Second Outdoor</title>
         <meta name="description" content="Lihat semua riwayat transaksi belanja Anda." />
       </Helmet>
 
@@ -175,7 +175,7 @@ const History = () => {
                 Belum ada transaksi
               </h3>
               <p className="text-muted-foreground mb-4">
-                {statusFilter !== 'all' 
+                {statusFilter !== 'all'
                   ? `Tidak ada transaksi dengan status "${statusLabels[statusFilter as TransactionStatus]}"`
                   : 'Mulai belanja untuk melihat riwayat transaksi'}
               </p>

@@ -1,9 +1,9 @@
-import { useSearchParams, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, ArrowRight, FileText } from 'lucide-react';
-import { useTransactionStore } from '@/stores/transactionStore';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
+import { useTransactionStore } from '@/stores/transactionStore';
+import { ArrowRight, CheckCircle, FileText, XCircle } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { Link, useSearchParams } from 'react-router-dom';
 
 const TransactionResult = () => {
   const [searchParams] = useSearchParams();
@@ -25,7 +25,7 @@ const TransactionResult = () => {
   return (
     <>
       <Helmet>
-        <title>{isSuccess ? 'Pembayaran Berhasil' : 'Pembayaran Gagal'} - Thrift Haven</title>
+        <title>{isSuccess ? 'Pembayaran Berhasil' : 'Pembayaran Gagal'} - Second Outdoor</title>
         <meta name="description" content={isSuccess ? 'Pembayaran Anda berhasil diproses.' : 'Pembayaran Anda gagal.'} />
       </Helmet>
 
@@ -86,7 +86,7 @@ const TransactionResult = () => {
                   </Link>
                 </Button>
               )}
-              
+
               <Button asChild variant={isSuccess ? 'outline' : 'default'} className="w-full h-12">
                 <Link to="/products">
                   {isSuccess ? 'Lanjut Belanja' : 'Coba Lagi'}
