@@ -18,6 +18,7 @@ import PaymentConfirmation from "./pages/PaymentConfirmation";
 import ProductDetail from "./pages/ProductDetail";
 import ProductList from "./pages/ProductList";
 import Profile from "./pages/Profile";
+import Register from "./pages/Register";
 import TransactionResult from "./pages/TransactionResult";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/about" element={<About />} />
             <Route path="/products" element={<ProductList />} />
             <Route path="/products/:id" element={<ProductDetail />} />

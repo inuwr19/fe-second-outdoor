@@ -7,18 +7,28 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
 
-const Login = () => {
+const Register = () => {
   const navigate = useNavigate();
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { register, isLoading, error, clearError } = useAuthStore();
+
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
 
-    const success = await login(email, password);
+    if (password !== confirmPassword) {
+        // We could also set a local error here if we wanted, but API validates too
+        // For better UX, let's catch it early if possible, but store handles error state
+    }
+
+    const success = await register(name, email, password, confirmPassword);
     if (success) {
       navigate('/dashboard');
     }
@@ -27,35 +37,34 @@ const Login = () => {
   return (
     <>
       <Helmet>
-        <title>Login - Second Outdoor</title>
-        <meta name="description" content="Login ke Second Outdoor untuk mulai berbelanja pakaian thrift berkualitas." />
+        <title>Daftar - Second Outdoor</title>
+        <meta name="description" content="Daftar akun baru di Second Outdoor untuk mulai berbelanja pakaian thrift berkualitas." />
       </Helmet>
 
       <div className="min-h-screen flex">
         {/* Left Panel - Decorative */}
-        <div className="hidden lg:flex lg:w-1/2 bg-primary relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-vintage-brown opacity-90" />
-          <div className="relative z-10 flex flex-col justify-center px-12 text-primary-foreground">
-            <ShoppingBag className="w-16 h-16 mb-8" />
-            <h1 className="font-display text-5xl font-bold mb-4">
-              Second Outdoor
+        <div className="hidden lg:flex lg:w-1/2 bg-secondary relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-secondary via-secondary to-vintage-sage opacity-90" />
+          <div className="relative z-10 flex flex-col justify-center px-12 text-secondary-foreground">
+            <ShoppingBag className="w-16 h-16 mb-8 text-white" />
+            <h1 className="font-display text-5xl font-bold mb-4 text-white">
+              Gabung Komunitas
             </h1>
-            <p className="text-xl opacity-90 max-w-md">
-              Temukan pakaian vintage berkualitas dengan harga terjangkau.
-              Setiap item unik, hanya satu di dunia.
+            <p className="text-xl opacity-90 max-w-md text-white/90">
+              Mulai perjalanan fashion berkelanjutan Anda bersama ribuan member lainnya.
             </p>
-            <div className="mt-12 space-y-4">
+            <div className="mt-12 space-y-4 text-white">
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-primary-foreground" />
-                <span>100% Produk Authentic</span>
+                <div className="w-2 h-2 rounded-full bg-white" />
+                <span>Akses Koleksi Terbaru</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-primary-foreground" />
-                <span>Kurasi Berkualitas</span>
+                <div className="w-2 h-2 rounded-full bg-white" />
+                <span>Gratis Ongkir Member Baru</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-primary-foreground" />
-                <span>Sustainable Fashion</span>
+                <div className="w-2 h-2 rounded-full bg-white" />
+                <span>Promo Eksklusif</span>
               </div>
             </div>
           </div>
@@ -66,14 +75,27 @@ const Login = () => {
           <div className="w-full max-w-md space-y-8 animate-fade-in">
             <div className="text-center lg:text-left">
               <h2 className="font-display text-3xl font-bold text-foreground">
-                Selamat Datang
+                Buat Akun Baru
               </h2>
               <p className="mt-2 text-muted-foreground">
-                Masuk ke akun Anda untuk mulai berbelanja
+                Lengkapi data diri Anda untuk mendaftar
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nama Lengkap</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="h-12"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -93,7 +115,7 @@ const Login = () => {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
+                    placeholder="Minimal 8 karakter"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -105,6 +127,28 @@ const Login = () => {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Konfirmasi Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Ulangi password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="h-12 pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -123,24 +167,18 @@ const Login = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Memproses...
+                    Mendaftar...
                   </>
                 ) : (
-                  'Login'
+                  'Daftar Sekarang'
                 )}
               </Button>
             </form>
 
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground mb-2">Demo credentials:</p>
-              <p className="text-sm font-mono">Email: user@thriftstore.com</p>
-              <p className="text-sm font-mono">Password: password123</p>
-            </div>
-
-            <div className="text-center text-sm pt-4">
-              <span className="text-muted-foreground">Belum punya akun? </span>
-              <Link to="/register" className="font-medium text-primary hover:underline">
-                Daftar sekarang
+            <div className="text-center text-sm">
+              <span className="text-muted-foreground">Sudah punya akun? </span>
+              <Link to="/login" className="font-medium text-primary hover:underline">
+                Login disini
               </Link>
             </div>
           </div>
@@ -150,4 +188,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
