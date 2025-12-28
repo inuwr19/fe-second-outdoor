@@ -46,10 +46,11 @@ const App = () => (
             <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
             <Route path="/payment/confirmation/:orderNumber" element={<PaymentConfirmation />} />
             {/* <Route path="/payment/confirmation/:transactionId" element={<ProtectedRoute><PaymentConfirmation /></ProtectedRoute>} /> */}
+            <Route path="/invoice/:orderNumber" element={<Invoice />} />
             <Route path="/transaction/result" element={<ProtectedRoute><TransactionResult /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/invoice/:transactionId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
+            {/* <Route path="/invoice/:transactionId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} /> */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

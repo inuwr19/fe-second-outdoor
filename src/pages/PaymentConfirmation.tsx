@@ -82,7 +82,7 @@ type PaymentStatusRes = {
 
 const PaymentConfirmation = () => {
   const navigate = useNavigate();
-  const { orderNumber } = useParams();
+  const { orderNumber } = useParams<{ orderNumber: string }>();
   const { user } = useAuthStore();
 
   const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY as string | undefined;
@@ -93,30 +93,70 @@ const PaymentConfirmation = () => {
 
   const [order, setOrder] = useState<ApiOrder | null>(null);
   const [status, setStatus] = useState<PaymentStatusRes | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
   const [snapReady, setSnapReady] = useState(false);
+  const [snapError, setSnapError] = useState<string | null>(null);
+
+  // state untuk UX saat sukses & redirect invoice
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    if (!user) navigate('/login');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    if (!user) {
+      navigate('/login', { replace: true });
+    }
+  }, [user, navigate]);
 
+  // Load snap.js
   useEffect(() => {
-    if (!clientKey) return;
+    if (!clientKey) {
+      setSnapError('Midtrans Client Key belum di-set. Pastikan VITE_MIDTRANS_CLIENT_KEY terisi.');
+      setSnapReady(false);
+      return;
+    }
 
     const existing = document.querySelector(`script[src="${snapUrl}"]`) as HTMLScriptElement | null;
-    if (existing) {
+
+    // kalau sudah pernah dimuat dan window.snap ada, anggap ready
+    if (existing && window.snap?.pay) {
       setSnapReady(true);
+      setSnapError(null);
       return;
+    }
+
+    // kalau script ada tapi window.snap belum ada, tunggu sebentar (kadang race)
+    if (existing && !window.snap?.pay) {
+      const t = setTimeout(() => {
+        if (window.snap?.pay) {
+          setSnapReady(true);
+          setSnapError(null);
+        } else {
+          setSnapReady(false);
+          setSnapError('Snap.js ter-load tapi window.snap belum tersedia.');
+        }
+      }, 500);
+      return () => clearTimeout(t);
     }
 
     const s = document.createElement('script');
     s.src = snapUrl;
     s.setAttribute('data-client-key', clientKey);
     s.async = true;
-    s.onload = () => setSnapReady(true);
-    s.onerror = () => setSnapReady(false);
+    s.onload = () => {
+      if (window.snap?.pay) {
+        setSnapReady(true);
+        setSnapError(null);
+      } else {
+        setSnapReady(false);
+        setSnapError('Snap.js ter-load tapi window.snap belum tersedia.');
+      }
+    };
+    s.onerror = () => {
+      setSnapReady(false);
+      setSnapError('Gagal memuat Midtrans Snap.js. Cek koneksi atau URL snap.js.');
+    };
     document.body.appendChild(s);
   }, [clientKey, snapUrl]);
 
@@ -125,6 +165,7 @@ const PaymentConfirmation = () => {
 
   const fetchAll = async () => {
     if (!orderNumber) return;
+
     setLoading(true);
     try {
       const [orderJson, statusJson] = await Promise.all([
@@ -134,6 +175,12 @@ const PaymentConfirmation = () => {
 
       setOrder(orderJson);
       setStatus(statusJson);
+
+      // kalau ternyata sudah paid (mis. user refresh halaman), langsung redirect
+      if (statusJson.order_status === 'paid') {
+        setRedirecting(true);
+        navigate(`/invoice/${orderNumber}`, { replace: true });
+      }
     } catch (e: any) {
       toast.error(e?.message ?? 'Terjadi kesalahan.');
       setOrder(null);
@@ -148,15 +195,27 @@ const PaymentConfirmation = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderNumber]);
 
-  const refreshStatus = async () => {
+  const refreshStatus = async (opts?: { silent?: boolean; redirectIfPaid?: boolean }) => {
     if (!orderNumber) return;
+
     setRefreshing(true);
     try {
       await apiPost(`/payments/${orderNumber}/refresh`, {});
-      await fetchAll();
-      toast.success('Status pembayaran diperbarui.');
+      const statusJson = await apiGet<PaymentStatusRes>(`/payments/${orderNumber}/status`);
+      setStatus(statusJson);
+
+      // ambil order terbaru untuk update UI (total, payment info, dsb)
+      const orderJson = await apiGet<ApiOrder>(`/orders/${orderNumber}`);
+      setOrder(orderJson);
+
+      if (!opts?.silent) toast.success('Status pembayaran diperbarui.');
+
+      if (opts?.redirectIfPaid && statusJson.order_status === 'paid') {
+        setRedirecting(true);
+        navigate(`/invoice/${orderNumber}`, { replace: true });
+      }
     } catch (e: any) {
-      toast.error(e?.message ?? 'Gagal refresh status.');
+      if (!opts?.silent) toast.error(e?.message ?? 'Gagal refresh status.');
     } finally {
       setRefreshing(false);
     }
@@ -168,7 +227,11 @@ const PaymentConfirmation = () => {
   const trxStatus = status?.payment?.transaction_status ?? order?.payment?.transaction_status;
 
   const isPaid = orderStatus === 'paid';
-  const isPending = orderStatus === 'pending_payment' || trxStatus === 'pending' || order?.payment?.status === 'pending';
+  const isPending =
+    orderStatus === 'pending_payment' ||
+    trxStatus === 'pending' ||
+    order?.payment?.status === 'pending';
+
   const isExpired = orderStatus === 'expired';
   const isFailed = orderStatus === 'failed';
 
@@ -180,30 +243,51 @@ const PaymentConfirmation = () => {
     return { label: 'Diproses', variant: 'secondary' as const, icon: Clock3 };
   }, [isPaid, isExpired, isFailed, isPending]);
 
+  const afterSnapCallback = async (toastMsg?: { type: 'success' | 'info' | 'error'; text: string }) => {
+    // UX: menyiapkan invoice
+    if (toastMsg) toast[toastMsg.type](toastMsg.text);
+
+    // refresh + redirect kalau paid
+    await refreshStatus({ silent: true, redirectIfPaid: true });
+
+    // kalau belum paid, jangan redirect
+    // (user bisa klik bayar lagi atau selesaikan pembayaran di channel yang dipilih)
+  };
+
   const handlePay = async () => {
+    if (!orderNumber) return;
+
     if (!snapToken) {
       toast.error('Snap token tidak tersedia.');
       return;
     }
-    if (!snapReady || !window.snap?.pay) {
-      toast.error('Midtrans Snap belum siap. Coba refresh halaman.');
+
+    if (!clientKey) {
+      toast.error('Midtrans client key belum di-set.');
       return;
     }
 
+    if (!snapReady || !window.snap?.pay) {
+      toast.error(snapError ?? 'Midtrans Snap belum siap. Coba refresh halaman.');
+      return;
+    }
+
+    // Radio pilihan metode hanya untuk UX (tidak mempengaruhi Snap secara langsung)
+    // Midtrans akan tampilkan opsi sesuai konfigurasi akun + params.
     window.snap.pay(snapToken, {
       onSuccess: async () => {
-        await refreshStatus();
+        setRedirecting(true);
+        await afterSnapCallback({ type: 'success', text: 'Pembayaran berhasil. Menyiapkan invoice…' });
       },
       onPending: async () => {
-        await refreshStatus();
+        await afterSnapCallback({ type: 'info', text: 'Pembayaran pending. Silakan selesaikan pembayaran Anda.' });
       },
       onError: async () => {
-        await refreshStatus();
-        toast.error('Pembayaran gagal.');
+        await afterSnapCallback({ type: 'error', text: 'Pembayaran gagal. Silakan coba lagi.' });
       },
       onClose: async () => {
-        await refreshStatus();
-        toast.info('Popup pembayaran ditutup.');
+        // user menutup popup → tetap refresh status (silent)
+        await afterSnapCallback({ type: 'info', text: 'Popup pembayaran ditutup.' });
       },
     });
   };
@@ -251,6 +335,7 @@ const PaymentConfirmation = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* LEFT */}
               <div className="lg:col-span-2 space-y-6">
                 <div className="glass-card rounded-xl p-6">
                   <h2 className="text-lg font-semibold mb-4">Data Penerima</h2>
@@ -294,7 +379,12 @@ const PaymentConfirmation = () => {
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                    <Button variant="outline" onClick={refreshStatus} disabled={refreshing} className="h-11">
+                    <Button
+                      variant="outline"
+                      onClick={() => refreshStatus({ redirectIfPaid: true })}
+                      disabled={refreshing}
+                      className="h-11"
+                    >
                       {refreshing ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -314,9 +404,21 @@ const PaymentConfirmation = () => {
                       </Button>
                     )}
                   </div>
+
+                  {/* info Snap load */}
+                  {!snapReady && (
+                    <div className="mt-4 text-xs text-muted-foreground">
+                      {snapError ? (
+                        <span className="text-destructive">{snapError}</span>
+                      ) : (
+                        'Memuat Midtrans…'
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {/* RIGHT */}
               <div className="lg:col-span-1">
                 <div className="glass-card rounded-xl p-6 sticky top-24">
                   <h2 className="text-xl font-semibold mb-4">Ringkasan Pembayaran</h2>
@@ -348,7 +450,7 @@ const PaymentConfirmation = () => {
                       ))}
                     </RadioGroup>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Setelah klik bayar, Midtrans akan menampilkan opsi pembayaran yang tersedia.
+                      Midtrans akan menampilkan opsi pembayaran yang tersedia sesuai konfigurasi akun Anda.
                     </p>
                   </div>
 
@@ -376,14 +478,30 @@ const PaymentConfirmation = () => {
                     </div>
 
                     {!isPaid && (
-                      <Button onClick={handlePay} disabled={!snapToken || !snapReady} className="w-full h-12 mt-2 text-base">
-                        {!snapReady ? 'Memuat Midtrans…' : `Bayar ${formatPrice(order.total)}`}
+                      <Button
+                        onClick={handlePay}
+                        disabled={!snapToken || !snapReady || redirecting}
+                        className="w-full h-12 mt-2 text-base"
+                      >
+                        {redirecting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Menyiapkan Invoice…
+                          </>
+                        ) : !snapReady ? (
+                          'Menunggu Midtrans…'
+                        ) : (
+                          `Bayar ${formatPrice(order.total)}`
+                        )}
                       </Button>
                     )}
 
                     {isPaid && (
-                      <Button onClick={() => navigate('/orders')} className="w-full h-12 mt-2 text-base">
-                        Lihat Riwayat Pesanan
+                      <Button
+                        onClick={() => navigate(`/invoice/${orderNumber}`, { replace: true })}
+                        className="w-full h-12 mt-2 text-base"
+                      >
+                        Lihat Invoice
                       </Button>
                     )}
 
