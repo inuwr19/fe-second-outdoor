@@ -67,6 +67,7 @@ function mapProduct(p: ApiProduct): Product {
     conditionLabel: conditionLabel(p.condition),
     size: p.size ?? 'ONE_SIZE',
     stock: Number(p.stock ?? 0),
+    status: p.status,
     image: pickPrimaryImage(p.images ?? []),
     createdAt: p.created_at ?? new Date().toISOString(),
   };

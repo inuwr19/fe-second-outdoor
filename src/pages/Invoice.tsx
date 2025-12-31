@@ -11,7 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 type InvoiceApi = {
   invoice_number: string | null;
   order_number: string;
-  date: string; // ISO dari backend
+  date: string;
   customer: {
     name: string;
     email: string;
@@ -30,7 +30,7 @@ type InvoiceApi = {
   shipping_fee: number;
   tax: number;
   total: number;
-  status: string; // paid, pending_payment, expired, failed, dll
+  status: string;
 };
 
 const Invoice = () => {
@@ -70,18 +70,26 @@ const Invoice = () => {
   }, [orderNumber]);
 
   const formatPrice = (price: number) =>
-    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(price);
 
   const formatDate = (iso: string) =>
-    new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
+    new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(
+      new Date(iso),
+    );
 
   const statusLabel = useMemo(() => {
     const s = data?.status;
     if (s === 'paid') return { text: 'LUNAS', className: 'bg-success/10 text-success' };
-    if (s === 'pending_payment') return { text: 'MENUNGGU PEMBAYARAN', className: 'bg-secondary/10 text-secondary' };
-    if (s === 'expired') return { text: 'KEDALUWARSA', className: 'bg-destructive/10 text-destructive' };
+    if (s === 'pending_payment')
+      return { text: 'MENUNGGU PEMBAYARAN', className: 'bg-secondary/10 text-secondary' };
+    if (s === 'expired')
+      return { text: 'KEDALUWARSA', className: 'bg-destructive/10 text-destructive' };
     if (s === 'failed') return { text: 'GAGAL', className: 'bg-destructive/10 text-destructive' };
-    return { text: (s ?? 'STATUS'), className: 'bg-muted text-muted-foreground' };
+    return { text: s ?? 'STATUS', className: 'bg-muted text-muted-foreground' };
   }, [data?.status]);
 
   if (!user) return null;
@@ -99,7 +107,7 @@ const Invoice = () => {
 
         <main className="container mx-auto px-4 py-8 max-w-3xl">
           <div className="print:hidden flex gap-3 mb-6">
-            <Button variant="ghost" onClick={() => navigate(-1)}>
+            <Button variant="ghost" onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Kembali
             </Button>
@@ -131,19 +139,27 @@ const Invoice = () => {
                   <p className="text-sm text-muted-foreground">Sustainable Fashion Store</p>
 
                   <div className="mt-3 text-sm text-muted-foreground space-y-1">
-                    <div>Order: <span className="font-medium text-foreground">{data.order_number}</span></div>
+                    <div>
+                      Order:{' '}
+                      <span className="font-medium text-foreground">{data.order_number}</span>
+                    </div>
                     <div>
                       Invoice:{' '}
                       <span className="font-mono font-semibold text-foreground">
                         {data.invoice_number ?? '-'}
                       </span>
                     </div>
-                    <div>Tanggal: <span className="font-medium text-foreground">{formatDate(data.date)}</span></div>
+                    <div>
+                      Tanggal:{' '}
+                      <span className="font-medium text-foreground">{formatDate(data.date)}</span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${statusLabel.className}`}>
+                  <div
+                    className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${statusLabel.className}`}
+                  >
                     {statusLabel.text}
                   </div>
                 </div>
@@ -158,7 +174,9 @@ const Invoice = () => {
                   <p className="font-medium">{data.customer.name}</p>
                   <p className="text-sm text-muted-foreground">{data.customer.email}</p>
                   <p className="text-sm text-muted-foreground">{data.customer.phone ?? '-'}</p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">{data.customer.address ?? '-'}</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                    {data.customer.address ?? '-'}
+                  </p>
                 </div>
 
                 <div className="md:text-right">

@@ -32,7 +32,7 @@ declare global {
           onPending?: (result: any) => void;
           onError?: (result: any) => void;
           onClose?: () => void;
-        }
+        },
       ) => void;
     };
   }
@@ -46,7 +46,12 @@ const PAYMENT_OPTIONS: Array<{
   description: string;
   icon: any;
 }> = [
-  { id: 'bank_transfer', name: 'Transfer Bank', description: 'Transfer via Midtrans', icon: Landmark },
+  {
+    id: 'bank_transfer',
+    name: 'Transfer Bank',
+    description: 'Transfer via Midtrans',
+    icon: Landmark,
+  },
   { id: 'va', name: 'Virtual Account', description: 'VA via Midtrans', icon: Building2 },
   { id: 'ewallet', name: 'E-Wallet', description: 'E-Wallet via Midtrans', icon: Wallet },
 ];
@@ -87,7 +92,9 @@ const PaymentConfirmation = () => {
 
   const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY as string | undefined;
   const isProd = (import.meta.env.VITE_MIDTRANS_IS_PRODUCTION as string) === 'true';
-  const snapUrl = isProd ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
+  const snapUrl = isProd
+    ? 'https://app.midtrans.com/snap/snap.js'
+    : 'https://app.sandbox.midtrans.com/snap/snap.js';
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
 
@@ -161,7 +168,11 @@ const PaymentConfirmation = () => {
   }, [clientKey, snapUrl]);
 
   const formatPrice = (price: number) =>
-    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(price);
 
   const fetchAll = async () => {
     if (!orderNumber) return;
@@ -236,14 +247,21 @@ const PaymentConfirmation = () => {
   const isFailed = orderStatus === 'failed';
 
   const statusUI = useMemo(() => {
-    if (isPaid) return { label: 'Pembayaran Berhasil', variant: 'default' as const, icon: CheckCircle2 };
-    if (isExpired) return { label: 'Pembayaran Kedaluwarsa', variant: 'destructive' as const, icon: XCircle };
-    if (isFailed) return { label: 'Pembayaran Gagal', variant: 'destructive' as const, icon: XCircle };
-    if (isPending) return { label: 'Menunggu Pembayaran', variant: 'secondary' as const, icon: Clock3 };
+    if (isPaid)
+      return { label: 'Pembayaran Berhasil', variant: 'default' as const, icon: CheckCircle2 };
+    if (isExpired)
+      return { label: 'Pembayaran Kedaluwarsa', variant: 'destructive' as const, icon: XCircle };
+    if (isFailed)
+      return { label: 'Pembayaran Gagal', variant: 'destructive' as const, icon: XCircle };
+    if (isPending)
+      return { label: 'Menunggu Pembayaran', variant: 'secondary' as const, icon: Clock3 };
     return { label: 'Diproses', variant: 'secondary' as const, icon: Clock3 };
   }, [isPaid, isExpired, isFailed, isPending]);
 
-  const afterSnapCallback = async (toastMsg?: { type: 'success' | 'info' | 'error'; text: string }) => {
+  const afterSnapCallback = async (toastMsg?: {
+    type: 'success' | 'info' | 'error';
+    text: string;
+  }) => {
     // UX: menyiapkan invoice
     if (toastMsg) toast[toastMsg.type](toastMsg.text);
 
@@ -277,10 +295,16 @@ const PaymentConfirmation = () => {
     window.snap.pay(snapToken, {
       onSuccess: async () => {
         setRedirecting(true);
-        await afterSnapCallback({ type: 'success', text: 'Pembayaran berhasil. Menyiapkan invoice…' });
+        await afterSnapCallback({
+          type: 'success',
+          text: 'Pembayaran berhasil. Menyiapkan invoice…',
+        });
       },
       onPending: async () => {
-        await afterSnapCallback({ type: 'info', text: 'Pembayaran pending. Silakan selesaikan pembayaran Anda.' });
+        await afterSnapCallback({
+          type: 'info',
+          text: 'Pembayaran pending. Silakan selesaikan pembayaran Anda.',
+        });
       },
       onError: async () => {
         await afterSnapCallback({ type: 'error', text: 'Pembayaran gagal. Silakan coba lagi.' });
@@ -305,14 +329,16 @@ const PaymentConfirmation = () => {
         <Navbar />
 
         <main className="container mx-auto px-4 py-8">
-          <Button variant="ghost" onClick={() => navigate('/')} className="mb-6">
+          <Button variant="ghost" onClick={() => navigate('/history')} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Kembali
           </Button>
 
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground">Konfirmasi Pembayaran</h1>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Konfirmasi Pembayaran
+              </h1>
               <p className="text-sm text-muted-foreground mt-1">
                 {orderNumber ? `Order: ${orderNumber}` : 'Order tidak ditemukan'}
               </p>
@@ -435,7 +461,9 @@ const PaymentConfirmation = () => {
                           key={m.id}
                           htmlFor={m.id}
                           className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
-                            paymentMethod === m.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                            paymentMethod === m.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50'
                           }`}
                         >
                           <RadioGroupItem value={m.id} id={m.id} />
@@ -450,7 +478,8 @@ const PaymentConfirmation = () => {
                       ))}
                     </RadioGroup>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Midtrans akan menampilkan opsi pembayaran yang tersedia sesuai konfigurasi akun Anda.
+                      Midtrans akan menampilkan opsi pembayaran yang tersedia sesuai konfigurasi
+                      akun Anda.
                     </p>
                   </div>
 
@@ -474,7 +503,9 @@ const PaymentConfirmation = () => {
 
                     <div className="flex justify-between">
                       <span className="font-semibold">Total</span>
-                      <span className="text-xl font-bold text-primary">{formatPrice(order.total)}</span>
+                      <span className="text-xl font-bold text-primary">
+                        {formatPrice(order.total)}
+                      </span>
                     </div>
 
                     {!isPaid && (

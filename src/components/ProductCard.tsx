@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/stores/cartStore';
 import { Product } from '@/types';
 import { Check, ShoppingBag } from 'lucide-react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -23,7 +24,10 @@ const toTitleCase = (value?: string) => {
 export const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart, isInCart } = useCartStore();
   const inCart = isInCart(product.id);
-  const isSoldOut = product.stock < 1;
+
+  // Robust sold-out detection: stock 0 atau status sold_out dari backend
+  const isSoldOut =
+    Number(product.stock ?? 0) < 1 || String((product as any).status ?? '') === 'sold_out';
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -43,7 +47,6 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
     toast.success('Berhasil ditambahkan ke keranjang!');
   };
-
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('id-ID', {
@@ -72,7 +75,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           'shadow-[0_10px_30px_-26px_rgba(2,16,31,.45)] hover:shadow-[0_18px_60px_-46px_rgba(2,16,31,.65)]',
           'transition-all duration-300 hover:-translate-y-1',
           'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background',
-          isSoldOut ? 'opacity-80' : '',
+          isSoldOut ? 'opacity-90' : '',
         ].join(' ')}
       >
         {/* Image */}
@@ -82,29 +85,45 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             alt={displayName || product.name}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className={[
+              'h-full w-full object-cover transition-transform duration-500',
+              isSoldOut ? 'grayscale opacity-70' : 'group-hover:scale-105',
+            ].join(' ')}
           />
 
           {/* Condition badge */}
           <Badge
             className={[
-              'absolute left-3 top-3',
+              'absolute left-3 top-3 z-10',
               conditionColor[conditionLabel] ?? 'bg-muted text-muted-foreground',
             ].join(' ')}
           >
             {conditionLabel}
           </Badge>
 
-          {/* Sold out */}
+          {/* Sold out overlay (lebih rapi) */}
           {isSoldOut && (
-            <div className="absolute inset-0 bg-background/75 flex items-center justify-center">
-              <Badge variant="destructive" className="text-base px-4 py-2">
-                Sold Out
-              </Badge>
-            </div>
+            <>
+              {/* overlay lembut */}
+              <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/15 via-black/35 to-black/45" />
+
+              {/* chip pojok */}
+              <div className="absolute top-3 right-3 z-10">
+                <div className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide bg-black/70 text-white border border-white/15 shadow">
+                  SOLD OUT
+                </div>
+              </div>
+
+              {/* badge tengah */}
+              <div className="absolute inset-0 z-[2] flex items-center justify-center">
+                <div className="rounded-full px-5 py-2 text-xs sm:text-sm font-bold tracking-[0.2em] bg-white/10 text-white border border-white/20 backdrop-blur-md shadow-lg">
+                  SOLD OUT
+                </div>
+              </div>
+            </>
           )}
 
-          {/* Quick add */}
+          {/* Quick add (hanya jika tersedia) */}
           {!isSoldOut && (
             <Button
               onClick={handleAddToCart}
@@ -129,9 +148,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               className={[
                 'text-[15px] sm:text-base font-semibold text-foreground',
                 'leading-snug tracking-tight',
-                'line-clamp-3 break-words',        // <- 3 baris
-                'min-h-[3.9rem]',                  // <- tinggi stabil (≈ 3 baris)
+                'line-clamp-3 break-words',
+                'min-h-[3.9rem]',
                 'group-hover:text-primary transition-colors',
+                isSoldOut ? 'text-muted-foreground group-hover:text-muted-foreground' : '',
               ].join(' ')}
               title={displayName || product.name}
             >
@@ -151,7 +171,12 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               {displayCategory || product.category}
             </p>
 
-            <p className="text-base sm:text-lg font-bold text-primary tracking-tight">
+            <p
+              className={[
+                'text-base sm:text-lg font-bold tracking-tight',
+                isSoldOut ? 'text-muted-foreground' : 'text-primary',
+              ].join(' ')}
+            >
               {formatPrice(product.price)}
             </p>
           </div>

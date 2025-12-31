@@ -13,22 +13,24 @@ export interface Product {
   size: string;
   stock: number;
 
-  image: string;     // URL gambar utama
-  createdAt: string; // ISO
+  status?: 'active' | 'sold_out' | 'reserved' | string;
+
+  image: string;
+  createdAt: string;
 }
 
-
 export interface User {
-  id: string;
+  id: string | number;
   email: string;
   name: string;
   address: string;
   phone: string;
+  role?: 'admin' | 'customer' | string;
   avatar?: string;
 }
 
 export interface CartItem {
-  id?: string;        // id CartItem dari backend (optional untuk guest/local)
+  id?: string; // id CartItem dari backend (optional untuk guest/local)
   product: Product;
   quantity: number;
   price_snapshot?: number; // optional jika Anda ingin total pakai snapshot

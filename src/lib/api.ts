@@ -60,6 +60,43 @@ export async function apiPost<T>(path: string, body?: any): Promise<T> {
   return data as T;
 }
 
+export async function apiPostForm<T>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: formData,
+  });
+
+  const data = await safeReadJson(res);
+
+  if (!res.ok) {
+    const msg = (data as any)?.message || `Request failed: ${res.status}`;
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
+export async function apiPut<T>(path: string, body?: any): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'PUT',
+    headers: {
+      ...authHeaders(),
+      'Content-Type': 'application/json',
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  const data = await safeReadJson(res);
+
+  if (!res.ok) {
+    const msg = (data as any)?.message || `Request failed: ${res.status}`;
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
 export async function apiDelete<T>(path: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     method: 'DELETE',
