@@ -54,10 +54,12 @@ const Payment = () => {
 
   const subtotal = getTotal();
   const shippingFee = 10_000;
-  const tax = Math.round(subtotal * 0.11);
-  const total = subtotal + shippingFee + tax;
+  const total = subtotal + shippingFee;
 
-  const canSubmit = useMemo(() => phone.trim().length > 0 && address.trim().length > 0, [phone, address]);
+  const canSubmit = useMemo(
+    () => phone.trim().length > 0 && address.trim().length > 0,
+    [phone, address],
+  );
 
   const handleContinue = async () => {
     if (!canSubmit) {
@@ -115,7 +117,9 @@ const Payment = () => {
             Kembali ke Keranjang
           </Button>
 
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-8">Data Pengiriman</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-8">
+            Data Pengiriman
+          </h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
@@ -180,10 +184,6 @@ const Payment = () => {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Ongkos Kirim</span>
                     <span className="font-medium">{formatPrice(shippingFee)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">PPN (11%)</span>
-                    <span className="font-medium">{formatPrice(tax)}</span>
                   </div>
 
                   <Separator />

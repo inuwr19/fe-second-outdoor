@@ -9,7 +9,6 @@ import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-
 const Cart = () => {
   const navigate = useNavigate();
   const { items, removeFromCart, getTotal, fetchCart } = useCartStore();
@@ -46,7 +45,7 @@ const Cart = () => {
   };
 
   const subtotal = getTotal();
-  const shipping = 0; // Free shipping
+  const shipping = 10_000;
   const total = subtotal + shipping;
 
   return (
@@ -130,7 +129,10 @@ const Cart = () => {
 
               {/* Order Summary */}
               <div className="lg:col-span-1">
-                <div className="glass-card rounded-xl p-6 sticky top-24 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                <div
+                  className="glass-card rounded-xl p-6 sticky top-24 animate-fade-in"
+                  style={{ animationDelay: '0.3s' }}
+                >
                   <h2 className="font-display text-xl font-semibold mb-6">Ringkasan Pesanan</h2>
 
                   <div className="space-y-4">
@@ -140,7 +142,7 @@ const Cart = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Ongkos Kirim</span>
-                      <span className="font-medium text-success">Gratis</span>
+                      <span className="font-medium">{formatPrice(shipping)}</span>
                     </div>
 
                     <Separator />
@@ -153,10 +155,7 @@ const Cart = () => {
                     </div>
                   </div>
 
-                  <Button
-                    onClick={handleCheckout}
-                    className="w-full h-12 mt-6 text-base"
-                  >
+                  <Button onClick={handleCheckout} className="w-full h-12 mt-6 text-base">
                     Lanjut ke Pembayaran
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -169,9 +168,7 @@ const Cart = () => {
                 <ShoppingBag className="w-12 h-12 text-muted-foreground" />
               </div>
               <h2 className="font-display text-2xl font-bold mb-2">Keranjang Kosong</h2>
-              <p className="text-muted-foreground mb-6">
-                Belum ada item di keranjang Anda
-              </p>
+              <p className="text-muted-foreground mb-6">Belum ada item di keranjang Anda</p>
               <Button asChild size="lg">
                 <Link to="/products">
                   Mulai Belanja

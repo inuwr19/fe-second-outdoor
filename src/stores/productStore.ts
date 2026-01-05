@@ -78,8 +78,9 @@ type ProductQuery = {
   category?: string; // backend: category
   min_price?: number;
   max_price?: number;
-  sort?: 'price_asc' | 'price_desc' | 'oldest'; // sesuai backend anda (oldest opsional)
+  sort?: 'price_asc' | 'price_desc' | 'oldest'; // jika backend Anda punya "newest", tambahkan di sini
   page?: number;
+  per_page?: number; // tambahan untuk ambil data sedikit (landing page)
 };
 
 function toQueryString(params: ProductQuery) {
@@ -105,6 +106,11 @@ interface ProductState {
   fetchProducts: (params?: ProductQuery) => Promise<void>;
   fetchProductBySlug: (slug: string) => Promise<Product | undefined>;
 
+  // khusus landing page (koleksi terbaru)
+  latestProducts: Product[];
+  latestLoading: boolean;
+  fetchLatestProducts: (limit?: number) => Promise<void>;
+
   // getter local
   getProductBySlug: (slug: string) => Product | undefined;
 }
@@ -117,6 +123,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
   currentPage: 1,
   lastPage: 1,
   total: 0,
+
+  latestProducts: [],
+  latestLoading: false,
 
   fetchProducts: async (params) => {
     set({ loading: true, error: undefined });
@@ -134,6 +143,27 @@ export const useProductStore = create<ProductState>((set, get) => ({
       set({
         loading: false,
         error: e?.message ?? 'Gagal memuat produk',
+      });
+    }
+  },
+
+  fetchLatestProducts: async (limit = 8) => {
+    set({ latestLoading: true });
+    try {
+      // Asumsi umum: endpoint /products default sort = terbaru (created_at desc)
+      // Jika backend Anda butuh sort tertentu, silakan tambahkan param sort di sini.
+      const qs = toQueryString({ page: 1, per_page: limit });
+      const res = await apiGet<Paginator<ApiProduct>>(`/products${qs}`);
+
+      set({
+        latestProducts: (res.data ?? []).map(mapProduct),
+        latestLoading: false,
+      });
+    } catch (e: any) {
+      set({
+        latestProducts: [],
+        latestLoading: false,
+        error: e?.message ?? 'Gagal memuat koleksi terbaru',
       });
     }
   },
